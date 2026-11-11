@@ -1,0 +1,164 @@
+
+==============================================================================
+1. THE ASSEMBLY - the unit that carries metadata
+==============================================================================
+Simple name      : ReflectionDemo
+Version          : 1.0.0.0
+FullName         : ReflectionDemo, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
+Location on disk : ReflectionDemo.dll
+IsDynamic        : False
+EntryPoint       : Metaprogramming.ReflectionDemo.Program.Main
+Modules          : ReflectionDemo.dll
+Referenced       : 4 assemblies, e.g. System.Runtime, System.Console, System.Linq
+
+Everything above was read from metadata tables the compiler wrote into the DLL.
+No source code was consulted; the assembly describes itself.
+
+==============================================================================
+2. FOUR WAYS TO GET A Type
+==============================================================================
+(a) typeof(BankAccount)            -> Metaprogramming.ReflectionDemo.BankAccount
+(b) instance.GetType()             -> Metaprogramming.ReflectionDemo.SavingsAccount   (note: NOT BankAccount)
+    static type of the variable is object, runtime type is SavingsAccount
+(c) Type.GetType("...BankAccount") -> Metaprogramming.ReflectionDemo.BankAccount
+(d) assembly.GetType("...")        -> Metaprogramming.ReflectionDemo.SavingsAccount
+
+All four produce the same kind of object: a System.Type describing the type.
+They differ only in WHEN and WHERE the lookup happens.
+
+==============================================================================
+3. WHY Type.GetType CAN RETURN null
+==============================================================================
+Unqualified name from another assembly:
+  Type.GetType("System.Text.Json.JsonSerializerOptions") = null  <- this is the trap
+Assembly-qualified name:
+  Type.GetType("...JsonSerializerOptions, System.Text.Json") = JsonSerializerOptions
+
+The canonical string is on the Type itself:
+  typeof(JsonSerializerOptions).AssemblyQualifiedName =
+    System.Text.Json.JsonSerializerOptions, System.Text.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51
+
+Prefer throwOnError:true when a missing type is a bug rather than a condition:
+  TypeLoadException: Could not resolve type 'Totally.
+
+Three reasons GetType returns null:
+  1. The name is not assembly-qualified and the type lives elsewhere.
+  2. The containing assembly has not been loaded yet (nothing triggers a load).
+  3. A typo, or a nested type written with '.' instead of '+' (Outer+Inner).
+
+==============================================================================
+4. TYPE DISCOVERY - every type in this assembly
+==============================================================================
+assembly.GetTypes() returned 8 types (compiler-generated ones included).
+
+The types we actually declared:
+  BankAccount            abstract class  base=Object
+  CurrentAccount         class           base=BankAccount
+  FixedDepositAccount    class           base=BankAccount
+  IInterestBearing       interface       base=-
+  LedgerEntry            class           base=Object
+  Program                static class    base=Object
+  SavingsAccount         class           base=BankAccount
+
+Finding all implementations of an interface - the core of plugin discovery:
+  SavingsAccount implements IInterestBearing
+  FixedDepositAccount implements IInterestBearing
+
+Note: use IsAssignableFrom, not equality - it accounts for inheritance.
+Note: GetTypes() throws ReflectionTypeLoadException if a dependency is missing;
+      production discovery code catches it and reads ex.Types for what did load.
+
+==============================================================================
+5. INSPECTING MEMBERS - methods, properties, constructors, fields
+==============================================================================
+CONSTRUCTORS (ConstructorInfo):
+  .ctor(String accountNumber, Decimal balance, Decimal annualRate)
+
+PROPERTIES (PropertyInfo):
+  Decimal    AnnualRate     {get}   declared on SavingsAccount
+  String     AccountNumber  {get}   declared on BankAccount
+  Decimal    Balance        {get;set}   declared on BankAccount
+  String     Nickname       {get;set}   declared on BankAccount
+
+METHODS (MethodInfo) - DeclaredOnly to hide inherited object members:
+  Decimal    get_AnnualRate()  (property accessor)
+  Decimal    ProjectInterest(Int32 months)
+  Decimal    AddInterest(Int32 months)
+  String     Describe()
+
+FIELDS (FieldInfo) - including the compiler's backing fields:
+  private  String     _auditTrail
+  private  Decimal    <AnnualRate>k__BackingField
+
+All five *Info types derive from MemberInfo, which is why they share Name,
+DeclaringType and GetCustomAttributes.
+
+==============================================================================
+6. BindingFlags - public vs non-public, instance vs static
+==============================================================================
+GetMethods() with no arguments means Public | Instance | Static:
+  count = 14 (includes inherited object methods)
+
+Public | Instance | DeclaredOnly  -> 4
+NonPublic | Instance | DeclaredOnly -> 1
+
+The private methods reflection can see:
+  private String Normalise(String note)
+
+Static members need BindingFlags.Static - they are NOT returned by Instance:
+  public static String ProductCode()
+
+Important: 'private' is a COMPILER rule, enforced at compile time.
+Reflection with BindingFlags.NonPublic is allowed to read it at runtime.
+Accessibility is an encapsulation feature, not a security boundary.
+
+==============================================================================
+7. READING AND WRITING THROUGH REFLECTION
+==============================================================================
+Read  Balance via PropertyInfo.GetValue -> 5000
+Wrote Nickname via PropertyInfo.SetValue -> Rainy day fund
+Read  private field _auditTrail         -> created
+Wrote private field _auditTrail         -> rewritten-by-reflection
+
+Legitimate uses: deserialization, ORM materialisation, test fixtures.
+Illegitimate use: routing around someone else's invariants in production code.
+
+==============================================================================
+8. INVOKING A METHOD BY NAME
+==============================================================================
+Found: Decimal AddInterest(Int32)
+Invoke(account, [12]) returned 120.00
+Balance is now 2120.00
+
+Passing the wrong arguments fails at RUNTIME:
+  ArgumentException: Object of type 'System.String' cannot be converted to type 'System.Int32'.
+
+An exception thrown inside the invoked method is wrapped:
+  TargetInvocationException -> InnerException is the real one:
+    InvalidOperationException: Insufficient funds: balance is 2120.00.
+
+==============================================================================
+9. Activator.CreateInstance - creating objects from a Type
+==============================================================================
+(a) Activator.CreateInstance<CurrentAccount>()  -> Current CA-0000 balance=0
+(b) Activator.CreateInstance(type, args)       -> Savings SB-77 balance=15000 rate=0.07
+(c) from a string type name                   -> FixedDeposit FD-12 principal=100000 term=24m
+(d) nonPublic:true reaches a private .ctor      -> LedgerEntry LE-f6134d
+(e) ConstructorInfo.Invoke                     -> Savings SB-88 balance=250 rate=0.03
+
+Compared with 'new SavingsAccount(...)':
+  new      -> the compiler emits a single newobj IL instruction; type checked; fastest.
+  Activator-> the runtime searches constructors, binds object[] args, then constructs.
+  Use Activator only when the type genuinely is not known at compile time.
+
+==============================================================================
+10. Activator FAILURE MODES (each exception triggered on purpose)
+==============================================================================
+MissingMethodException  : Constructor on type 'Metaprogramming.ReflectionDemo.SavingsAccount' not found.
+Abstract type           : Constructor on type 'Metaprogramming.ReflectionDemo.BankAccount' not found.
+Private .ctor, nonPublic:false -> MissingMethodException (use the nonPublic overload)
+Ctor threw              : TargetInvocationException -> ArgumentOutOfRangeException: Opening balance cannot be negative. (Parameter 'balance')
+Null Type               : ArgumentNullException (paramName=type)
+
+Every one of these is a RUNTIME failure. The compiler could not have warned you,
+which is the central tradeoff of reflective construction.

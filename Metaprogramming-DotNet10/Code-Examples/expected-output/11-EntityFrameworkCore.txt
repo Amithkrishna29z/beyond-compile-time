@@ -1,0 +1,327 @@
+
+==============================================================================
+1. ENTITY DISCOVERY - how types get into the model
+==============================================================================
+The DbSet<T> properties declared on BloggingContext, read with reflection:
+  DbSet<Blog> Blogs
+  DbSet<Post> Posts
+  DbSet<Author> Authors
+
+The entity types EF actually put in the model:
+  Author   -> table "authors", key = AuthorKey
+  Blog     -> table "Blogs", key = Id
+  Post     -> table "blog_posts", key = Id
+
+How a type enters the model:
+  - a DbSet<T> property on the context (the usual way);
+  - modelBuilder.Entity<T>() in OnModelCreating;
+  - being REACHABLE by navigation from a type already in the model.
+
+That third rule catches people out: adding a navigation property can pull a
+whole new type into the model and change your schema, with no DbSet in sight.
+
+Note the model was built ONCE, on first use, and is cached for the lifetime of
+the application - the same 'discover once' pattern as MVC in example 10.
+
+==============================================================================
+2. THE EF MODEL IS NOT THE CLR MODEL
+==============================================================================
+CLR metadata for Post - what the C# compiler emitted:
+  Int32       Id
+  String      Title
+  String      Content
+  DateTime    PublishedOn
+  Int32       Rating
+  Int32       WordCount
+  Int32       BlogId
+  Blog        Blog
+  Author      Author
+  Int32?      AuthorId
+
+EF Core model metadata for Post - what EF decided to map:
+  Int32       Id              column "post_id"
+  Int32?      AuthorId        column "AuthorId"
+  Int32       BlogId          column "BlogId"
+  String      Content         column "Content"
+  DateTime    LastUpdatedUtc  column "last_updated_utc"  <- SHADOW: no CLR property exists
+  DateTime    PublishedOn     column "PublishedOn"
+  Int32       Rating          column "Rating"
+  String      Title           column "Title"
+
+Compare the two lists carefully - they are DIFFERENT:
+
+  WordCount        is a CLR property but NOT in the EF model  ([NotMapped])
+  Blog, Author     are CLR properties but are NAVIGATIONS, not scalar properties
+  LastUpdatedUtc   is in the EF model but is NOT a CLR property (shadow property)
+
+Navigations are tracked separately from properties:
+  Author     -> Author (reference)
+  Blog       -> Blog (reference)
+
+So: the EF Core model is a SEPARATE model that EF BUILDS BY READING CLR metadata,
+then augments with its own conventions and your configuration. It is not a view
+over reflection, and it is not limited to what reflection can see. Reflection is
+the input; IModel is the output, and the output is richer.
+
+==============================================================================
+3. THE THREE WAYS TO SUPPLY METADATA
+==============================================================================
+Blog - mostly CONVENTION. Nothing was configured; EF inferred it all:
+  table: Blogs
+    Id              column=Id,               type=INTEGER,        nullable=False
+    CreatedOn       column=CreatedOn,        type=TEXT,           nullable=False
+    Title           column=Title,            type=TEXT,           nullable=False
+    Url             column=Url,              type=TEXT,           nullable=True
+
+Post - DATA ANNOTATIONS. [Table], [Column], [MaxLength], [NotMapped]:
+  table: blog_posts
+    Id              column=post_id,          type=INTEGER,        nullable=False
+    AuthorId        column=AuthorId,         type=INTEGER,        nullable=True
+    BlogId          column=BlogId,           type=INTEGER,        nullable=False
+    Content         column=Content,          type=TEXT,           nullable=False
+    LastUpdatedUtc  column=last_updated_utc, type=TEXT,           nullable=False
+    PublishedOn     column=PublishedOn,      type=TEXT,           nullable=False
+    Rating          column=Rating,           type=INTEGER,        nullable=False
+    Title           column=Title,            type=TEXT,           nullable=False, maxLength=200
+
+Author - FLUENT API. No attributes on the class at all:
+  table: authors
+    AuthorKey       column=AuthorKey,        type=INTEGER,        nullable=False
+    EmailAddress    column=email,            type=TEXT,           nullable=False, maxLength=200
+    Name            column=full_name,        type=TEXT,           nullable=False, maxLength=120
+
+Precedence, lowest to highest: CONVENTION < DATA ANNOTATION < FLUENT API.
+The fluent API always wins, which is why it is the right place for
+environment-specific or hard-to-express configuration.
+
+Note the parallel with Part 1: convention is IMPLICIT metadata inferred from the
+declaration; annotations and fluent calls are EXPLICIT metadata you supplied.
+
+==============================================================================
+4. THE SCHEMA EF GENERATED FROM THAT METADATA
+==============================================================================
+The DDL EF Core generated from the model (read back from SQLite itself):
+
+  CREATE TABLE "Blogs" (
+      "Id" INTEGER NOT NULL CONSTRAINT "PK_Blogs" PRIMARY KEY AUTOINCREMENT,
+      "Title" TEXT NOT NULL,
+      "Url" TEXT NULL,
+      "CreatedOn" TEXT NOT NULL
+  )
+
+  CREATE TABLE "authors" (
+      "AuthorKey" INTEGER NOT NULL CONSTRAINT "PK_authors" PRIMARY KEY AUTOINCREMENT,
+      "full_name" TEXT NOT NULL,
+      "email" TEXT NOT NULL
+  )
+
+  CREATE TABLE "blog_posts" (
+      "post_id" INTEGER NOT NULL CONSTRAINT "PK_blog_posts" PRIMARY KEY AUTOINCREMENT,
+      "Title" TEXT NOT NULL,
+      "Content" TEXT NOT NULL,
+      "PublishedOn" TEXT NOT NULL,
+      "Rating" INTEGER NOT NULL,
+      "BlogId" INTEGER NOT NULL,
+      "AuthorId" INTEGER NULL,
+      "last_updated_utc" TEXT NOT NULL,
+      CONSTRAINT "FK_blog_posts_Blogs_BlogId" FOREIGN KEY ("BlogId") REFERENCES "Blogs" ("Id") ON DELETE CASCADE,
+      CONSTRAINT "FK_blog_posts_authors_AuthorId" FOREIGN KEY ("AuthorId") REFERENCES "authors" ("AuthorKey") ON DELETE SET NULL
+  )
+
+  CREATE TABLE sqlite_sequence(name,seq)
+
+  CREATE UNIQUE INDEX "IX_authors_email" ON "authors" ("email")
+
+  CREATE INDEX "IX_blog_posts_AuthorId" ON "blog_posts" ("AuthorId")
+
+  CREATE INDEX "IX_blog_posts_BlogId" ON "blog_posts" ("BlogId")
+
+Notice in that SQL:
+  - "blog_posts" and "post_id" came from [Table] and [Column] on Post;
+  - "authors", "full_name", "email" came from the fluent API;
+  - "Blogs" kept its conventional name because nothing configured it;
+  - "last_updated_utc" exists although no C# property does (shadow property);
+  - there is no WordCount column, because of [NotMapped];
+  - the unique index on email came from HasIndex(...).IsUnique().
+Seeded 2 blogs and 4 posts.
+
+==============================================================================
+5. EXPRESSION TREES BECOMING SQL
+==============================================================================
+A. A simple filter.
+
+  C#:
+    context.Posts.Where(p => p.Rating >= 4)
+
+  The expression tree EF was handed:
+    [Microsoft.EntityFrameworkCore.Query.EntityQueryRootExpression].Where(p => (p.Rating >= 4))
+
+  The SQL EF produced (ToQueryString does NOT execute the query):
+    SELECT "b"."post_id", "b"."AuthorId", "b"."BlogId", "b"."Content", "b"."last_updated_utc", "b"."PublishedOn", "b"."Rating", "b"."Title"
+    FROM "blog_posts" AS "b"
+    WHERE "b"."Rating" >= 0 AND "b"."Rating" >= 4
+
+  Note the extra 'Rating >= 0' predicate: that is the global query filter
+  declared with HasQueryFilter in OnModelCreating. It is stored in the MODEL
+  as an expression tree and combined into every query over Post.
+
+B. A projection, a join and an ordering - still one SQL statement.
+
+  C#:
+    context.Posts
+      .Where(p => p.Rating >= 4 && p.Blog!.Title.Contains(".NET"))
+      .OrderByDescending(p => p.PublishedOn)
+      .Select(p => new { p.Title, Blog = p.Blog!.Title, Author = p.Author!.Name })
+
+  SQL:
+    SELECT "b"."Title", "b0"."Title" AS "Blog", "a"."full_name" AS "Author"
+    FROM "blog_posts" AS "b"
+    INNER JOIN "Blogs" AS "b0" ON "b"."BlogId" = "b0"."Id"
+    LEFT JOIN "authors" AS "a" ON "b"."AuthorId" = "a"."AuthorKey"
+    WHERE "b"."Rating" >= 0 AND "b"."Rating" >= 4 AND instr("b0"."Title", '.NET') > 0
+    ORDER BY "b"."PublishedOn" DESC
+
+  Results (NOW the query executes):
+    Emitting IL at runtime  [.NET Notes, Asha Menon]
+    Reflection in practice  [.NET Notes, Asha Menon]
+
+  EF translated the navigation p.Blog!.Title into an INNER JOIN, the nullable
+  p.Author!.Name into a LEFT JOIN, and the anonymous type into a SELECT list -
+  so it never loaded a whole Post entity.
+
+  Look at how string.Contains was rendered: instr("b0"."Title", '.NET') > 0.
+  That is a SQLite function, not LIKE. The PROVIDER chooses the translation,
+  and the SQL Server provider emits something different for the same C#.
+  This is why you should read the SQL your provider actually produces rather
+  than assume - ToQueryString() exists for precisely that.
+
+C. Aggregation happening in the DATABASE, not in memory.
+
+  SQL:
+    SELECT "b"."Title", (
+        SELECT COUNT(*)
+        FROM "blog_posts" AS "b0"
+        WHERE "b0"."Rating" >= 0 AND "b"."Id" = "b0"."BlogId") AS "PostCount", (
+        SELECT MAX("b1"."Rating")
+        FROM "blog_posts" AS "b1"
+        WHERE "b1"."Rating" >= 0 AND "b"."Id" = "b1"."BlogId") AS "Best"
+    FROM "Blogs" AS "b"
+
+  Results:
+    .NET Notes            posts=3, best rating=5
+    Data Platform Diary   posts=1, best rating=5
+
+D. A composed, reusable predicate - the real reason this matters.
+
+  Expression<Func<Post, bool>> isRecommended = p => p.Rating >= 4;
+  context.Posts.Where(isRecommended)  ->
+    SELECT "b"."post_id", "b"."AuthorId", "b"."BlogId", "b"."Content", "b"."last_updated_utc", "b"."PublishedOn", "b"."Rating", "b"."Title"
+    FROM "blog_posts" AS "b"
+    WHERE "b"."Rating" >= 0 AND "b"."Rating" >= 4
+
+  The identical object could instead be .Compile()d and run over a List<Post>
+  in memory, exactly as in example 08. One definition of 'recommended', two
+  execution engines. That is only possible because it is DATA, not a delegate.
+
+  Watch the type, though: Where(Func<Post,bool>) on IEnumerable and
+  Where(Expression<Func<Post,bool>>) on IQueryable look identical in source.
+  An accidental .AsEnumerable() or .ToList() before .Where() switches you from
+  the second to the first, and the filtering silently moves from the database
+  into your process - after downloading every row. Demonstrated next.
+
+E. The classic performance bug, made visible.
+
+  GOOD: context.Posts.Where(p => p.Rating >= 4).ToList()
+    -> filtering in SQL:
+    SELECT "b"."post_id", "b"."AuthorId", "b"."BlogId", "b"."Content", "b"."last_updated_utc", "b"."PublishedOn", "b"."Rating", "b"."Title"
+    FROM "blog_posts" AS "b"
+    WHERE "b"."Rating" >= 0 AND "b"."Rating" >= 4
+
+  BAD : context.Posts.ToList().Where(p => p.Rating >= 4)
+    -> the SQL EF runs is just:
+    SELECT "b"."post_id", "b"."AuthorId", "b"."BlogId", "b"."Content", "b"."last_updated_utc", "b"."PublishedOn", "b"."Rating", "b"."Title"
+    FROM "blog_posts" AS "b"
+    WHERE "b"."Rating" >= 0
+    -> every row is transferred, then C# discards most of them.
+
+  Both produce the same answer. On a large table only one of them is usable.
+
+==============================================================================
+6. WHEN TRANSLATION FAILS
+==============================================================================
+Example 08 said: a valid expression tree is not necessarily a TRANSLATABLE one.
+Here is that failure for real.
+
+  context.Posts.Where(p => IsProofRead(p.Content)).ToList()
+  where IsProofRead is a local C# method with no SQL equivalent:
+
+  InvalidOperationException:
+    The LINQ expression 'DbSet<Post>() .Where(p => p.Rating >= 0) .Where(p => Program.IsProofRead(p.Content))' could not be translated
+
+EF Core refuses rather than silently downloading the table and filtering in
+memory. That refusal is deliberate: the silent version was the behaviour of
+older EF Core releases and it caused serious production surprises.
+
+The three fixes, in order of preference:
+  1. Rewrite the predicate using constructs EF can translate.
+  2. Narrow in SQL first, then finish in memory, being explicit about it:
+       context.Posts.Where(p => p.Rating >= 3).AsEnumerable()
+                    .Where(p => IsProofRead(p.Content)).ToList()
+       -> 3 post(s): Reflection in practice, Emitting IL at runtime, Expression trees and SQL
+  3. Push the logic into the database as a function and map it with
+     modelBuilder.HasDbFunction.
+
+Also worth knowing: what IS translatable changes between EF versions and
+between providers. A query that works on SQL Server may fail on SQLite.
+The provider, not EF Core alone, decides.
+
+==============================================================================
+7. CHANGE TRACKING AND SHADOW PROPERTIES
+==============================================================================
+Loaded: "Reflection in practice" (rating 5)
+  tracked state: Unchanged
+
+After 'post.Rating = 3;' - we touched a plain C# property, nothing else:
+  tracked state: Modified
+
+  Modified properties EF detected by comparing against its snapshot:
+    Rating: "5" -> "3"
+
+EF kept the ORIGINAL values so it can generate a minimal UPDATE. It obtained
+them by reading the entity's properties when it materialised the object.
+
+Reading the shadow property - there is no post.LastUpdatedUtc to read,
+so it has to be reached through the change tracker by NAME:
+  before SaveChanges: 11/10/2026 09:00:00
+  after  SaveChanges: 11/10/2026 09:00:00
+  (BloggingContext.SaveChanges sets it for every Added/Modified Post)
+  tracked state now : Unchanged
+
+A quick note on how the values get in and out of your objects: EF Core does not
+call PropertyInfo.GetValue per property per row. It builds accessor delegates
+once per property - from expression trees on a JIT runtime - and reuses them.
+Same lesson as examples 05 and 10: reflect once, then run compiled code.
+
+==============================================================================
+8. THE WHOLE PIPELINE, SUMMARISED
+==============================================================================
+  stage                     mechanism                         when
+  --------------------------------------------------------------------------
+  find DbSet<T> properties  System.Reflection                 startup (once)
+  read annotations          GetCustomAttributes               startup (once)
+  apply conventions         EF's convention set               startup (once)
+  apply fluent config       your OnModelCreating              startup (once)
+  build IModel              EF model builder                  startup (once)
+  build accessors           expression trees -> delegates     first use, cached
+  translate a query         ExpressionVisitor chain -> SQL    per query shape,
+                                                              then cached
+  materialise rows          cached accessor delegates         per row
+
+Every technique from this session appears in that table:
+  Part 2 reflection      -> discovering DbSets and reading attributes
+  Part 3 code generation -> accessor delegates built at run time
+  Part 4 expression trees-> LINQ becoming SQL
+
+And the recurring rule, for the third time in Part 4: DISCOVER ONCE, CACHE,
+THEN EXECUTE COMPILED CODE. That is how a metadata-driven framework can be
+both completely general and fast enough to use in production.

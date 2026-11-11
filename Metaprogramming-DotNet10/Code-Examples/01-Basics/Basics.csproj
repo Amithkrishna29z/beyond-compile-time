@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Metaprogramming.Basics</RootNamespace>
+    <AssemblyName>Basics</AssemblyName>
+  </PropertyGroup>
+
+  <!--
+    No package references needed. System.ComponentModel.DataAnnotations and
+    System.Text.Json are both part of the net10.0 shared framework.
+  -->
+
+</Project>

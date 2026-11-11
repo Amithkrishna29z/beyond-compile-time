@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1288 548" width="1288" height="548" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+<defs>
+<marker id="a-default" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#4C8DFF"/></marker>
+<marker id="a-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2CD8E8"/></marker>
+<marker id="a-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#A98BFF"/></marker>
+<marker id="a-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6F82A4"/></marker>
+<marker id="a-ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#3FD69B"/></marker>
+<marker id="a-warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FFC24B"/></marker>
+<marker id="a-bad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FF7B7B"/></marker>
+</defs>
+<rect width="1288" height="548" fill="#0E1628"/>
+<text x="24" y="17" fill="#6F82A4" font-size="13">The IL evaluation stack — int Add(int a, int b)</text>
+<g transform="translate(24,32)">
+<rect x="50" y="30" width="220" height="58" rx="9" fill="#0A1120" stroke="#2C3A5C" stroke-width="1.6"/>
+<text x="160.0" y="65.8" fill="#D7E2F5" font-size="18.9" text-anchor="middle" font-family="Consolas, SFMono-Regular, Menlo, monospace">ldarg.0</text>
+<rect x="350" y="30" width="220" height="58" rx="9" fill="#0A1120" stroke="#2C3A5C" stroke-width="1.6"/>
+<text x="460.0" y="65.8" fill="#D7E2F5" font-size="18.9" text-anchor="middle" font-family="Consolas, SFMono-Regular, Menlo, monospace">ldarg.1</text>
+<rect x="650" y="30" width="220" height="58" rx="9" fill="#0A1120" stroke="#2C3A5C" stroke-width="1.6"/>
+<text x="760.0" y="65.8" fill="#D7E2F5" font-size="18.9" text-anchor="middle" font-family="Consolas, SFMono-Regular, Menlo, monospace">add</text>
+<rect x="950" y="30" width="220" height="58" rx="9" fill="#0A1120" stroke="#2C3A5C" stroke-width="1.6"/>
+<text x="1060.0" y="65.8" fill="#D7E2F5" font-size="18.9" text-anchor="middle" font-family="Consolas, SFMono-Regular, Menlo, monospace">ret</text>
+<rect x="50" y="124" width="220" height="250" rx="9" fill="none" stroke="#2C3A5C" stroke-width="1.6" stroke-dasharray="5 4"/>
+<rect x="350" y="124" width="220" height="250" rx="9" fill="none" stroke="#2C3A5C" stroke-width="1.6" stroke-dasharray="5 4"/>
+<rect x="650" y="124" width="220" height="250" rx="9" fill="none" stroke="#2C3A5C" stroke-width="1.6" stroke-dasharray="5 4"/>
+<rect x="950" y="124" width="220" height="250" rx="9" fill="none" stroke="#2C3A5C" stroke-width="1.6" stroke-dasharray="5 4"/>
+<rect x="70" y="300" width="180" height="52" rx="9" fill="#152A4D" stroke="#2CD8E8" stroke-width="1.6"/>
+<text x="160.0" y="332.4" fill="#E9EEF9" font-size="17.7" text-anchor="middle" >a</text>
+<rect x="370" y="300" width="180" height="52" rx="9" fill="#152A4D" stroke="#2CD8E8" stroke-width="1.6"/>
+<text x="460.0" y="332.4" fill="#E9EEF9" font-size="17.7" text-anchor="middle" >a</text>
+<rect x="370" y="240" width="180" height="52" rx="9" fill="#152A4D" stroke="#2CD8E8" stroke-width="1.6"/>
+<text x="460.0" y="272.4" fill="#E9EEF9" font-size="17.7" text-anchor="middle" >b</text>
+<rect x="670" y="300" width="180" height="52" rx="9" fill="#152A4D" stroke="#2CD8E8" stroke-width="1.6"/>
+<text x="760.0" y="332.4" fill="#E9EEF9" font-size="17.7" text-anchor="middle" >a + b</text>
+<rect x="970" y="300" width="180" height="52" rx="9" fill="none" stroke="#2C3A5C" stroke-width="1.6" stroke-dasharray="5 4"/>
+<text x="1060.0" y="331.1" fill="#6F82A4" font-size="14.2" text-anchor="middle" >empty</text>
+<rect x="50" y="384" width="220" height="34" rx="9" fill="none" stroke="#2C3A5C" stroke-width="1.6" stroke-dasharray="5 4"/>
+<text x="160.0" y="405.2" fill="#6F82A4" font-size="11.8" text-anchor="middle" >push argument 0</text>
+<rect x="350" y="384" width="220" height="34" rx="9" fill="none" stroke="#2C3A5C" stroke-width="1.6" stroke-dasharray="5 4"/>
+<text x="460.0" y="405.2" fill="#6F82A4" font-size="11.8" text-anchor="middle" >push argument 1</text>
+<rect x="650" y="384" width="220" height="34" rx="9" fill="none" stroke="#2C3A5C" stroke-width="1.6" stroke-dasharray="5 4"/>
+<text x="760.0" y="405.2" fill="#6F82A4" font-size="11.8" text-anchor="middle" >pop 2, push the sum</text>
+<rect x="950" y="384" width="220" height="34" rx="9" fill="none" stroke="#2C3A5C" stroke-width="1.6" stroke-dasharray="5 4"/>
+<text x="1060.0" y="405.2" fill="#6F82A4" font-size="11.8" text-anchor="middle" >pop the return value</text>
+<rect x="50" y="430" width="1120" height="54" rx="9" fill="#1D3A6B" stroke="#2CD8E8" stroke-width="1.6"/>
+<text x="610.0" y="462.1" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >Rule 1 — at ret the stack holds EXACTLY the return value.      Rule 2 — operand types must suit the opcode.</text>
+<line x1="270.0" y1="59.0" x2="350.0" y2="59.0" stroke="#6F82A4" stroke-width="2" marker-end="url(#a-muted)"/>
+<line x1="570.0" y1="59.0" x2="650.0" y2="59.0" stroke="#6F82A4" stroke-width="2" marker-end="url(#a-muted)"/>
+<line x1="870.0" y1="59.0" x2="950.0" y2="59.0" stroke="#6F82A4" stroke-width="2" marker-end="url(#a-muted)"/>
+</g></svg>

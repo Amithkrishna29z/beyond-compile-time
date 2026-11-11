@@ -1,0 +1,265 @@
+
+==============================================================================
+1. WHAT A SERIALIZER HAS TO FIGURE OUT
+==============================================================================
+To turn an arbitrary object into JSON, a library must answer, at run time:
+  - which members should be written?
+  - what name should each one have in the output?
+  - what is each member's type, so it knows how to write the value?
+  - how do I READ each value out of the object?
+  - on the way back: which constructor or setters do I use?
+
+Every one of those answers is in metadata, so the Part 2 API is enough:
+  Int32              InvoiceId       -> "invoice_id"
+  String             CustomerName  
+  DateOnly           IssuedOn      
+  Decimal            AmountDue     
+  InvoiceStatus      Status        
+  List`1             Lines         
+  String             InternalNotes   [JsonIgnore]
+
+This is why serialization is the canonical metaprogramming example: the library
+author cannot know your types, so the library must ask the types themselves.
+
+==============================================================================
+2. A HAND-WRITTEN REFLECTION SERIALIZER (to remove the magic)
+==============================================================================
+Output of MiniJson.Serialize (see the bottom of this file):
+
+{"invoice_id":4201,"customerName":"Nila Traders","issuedOn":"2026-11-10","amountDue":18750.50,"status":"AwaitingPayment","lines":[{"description":"Mechanical Keyboard","quantity":2,"unitPrice":4999.00},{"description":"USB-C Dock","quantity":1,"unitPrice":8752.50}]}
+
+MiniJson is reflection plus string building, and nothing else:
+  GetProperties() -> for each, GetValue() -> format by type -> write a pair.
+
+It also shows what a real serializer adds on top: escaping, cycles, numbers,
+culture, nulls, polymorphism, dictionaries, streaming, async, and speed.
+Use System.Text.Json. Write MiniJson once, to understand it.
+
+==============================================================================
+3. System.Text.Json, REFLECTION MODE (the default)
+==============================================================================
+{
+  "customerName": "Nila Traders",
+  "invoice_id": 4201,
+  "issuedOn": "2026-11-10",
+  "amountDue": 18750.50,
+  "status": "AwaitingPayment",
+  "lines": [
+    {
+      "description": "Mechanical Keyboard",
+      "quantity": 2,
+      "unitPrice": 4999.00
+    },
+    {
+      "description": "USB-C Dock",
+      "quantity": 1,
+      "unitPrice": 8752.50
+    }
+  ]
+}
+
+What happened on the first call for this type:
+  1. System.Text.Json reflected over Invoice and built a JsonTypeInfo for it.
+  2. It created fast member accessors - on a JIT runtime it generates them,
+     rather than calling PropertyInfo.GetValue per property per object.
+  3. It CACHED that plan on the JsonSerializerOptions instance.
+
+Hence the standard advice: CREATE JsonSerializerOptions ONCE AND REUSE IT.
+The usual explanation - 'otherwise it re-reflects every call' - turns out to be
+only half right on current .NET. Let us measure instead of asserting.
+
+  5,000 serializations of the same object:
+    one reused options instance          25 ms   1.0x
+    new options, identical settings      45 ms   1.8x
+    new options, DIFFERENT settings     230 ms   9.2x
+
+What the three rows tell us:
+  - Reusing one instance is fastest, as expected.
+  - New-but-identical options is only moderately slower. System.Text.Json keeps
+    a process-wide cache of serialization metadata that EQUIVALENT options
+    instances share, so the expensive reflection is not repeated. You still pay
+    for the allocation and the cache lookup.
+  - New-and-DIFFERENT options is dramatically slower. Nothing can be shared, so
+    the type really is analysed again for every distinct configuration.
+
+So the correct statement is: reuse your options instance, and above all do not
+vary its settings per call. The second mistake is the expensive one.
+
+==============================================================================
+4. ATTRIBUTES THAT STEER SERIALIZATION
+==============================================================================
+The attributes used on Invoice and what each one did:
+
+  [JsonPropertyName("invoice_id")]  renamed InvoiceId in the output
+  [JsonIgnore]                       dropped InternalNotes entirely
+  [JsonPropertyOrder(-1)]            moved CustomerName to the front
+  [JsonConverter(...)]               took over DateOnly formatting
+  [JsonStringEnumConverter]          wrote the enum as text, not a number
+
+{
+  "CustomerName": "Nila Traders",
+  "invoice_id": 4201,
+  "IssuedOn": "2026-11-10",
+  "AmountDue": 18750.50,
+  "Status": "AwaitingPayment",
+  "Lines": [
+    {
+      "Description": "Mechanical Keyboard",
+      "Quantity": 2,
+      "UnitPrice": 4999.00
+    },
+    {
+      "Description": "USB-C Dock",
+      "Quantity": 1,
+      "UnitPrice": 8752.50
+    }
+  ]
+}
+
+Note the precedence: [JsonPropertyName] beats PropertyNamingPolicy.
+An explicit attribute always wins over a global convention - the same
+'explicit metadata overrides implicit metadata' rule from Part 1.
+
+Note also InternalNotes: the value exists on the object but never reaches
+the JSON. That is a one-attribute way to keep internal data out of an API
+response, and it is enforced by the serializer, not by the caller.
+
+==============================================================================
+5. SOURCE-GENERATED MODE (compile-time metaprogramming)
+==============================================================================
+InvoiceJsonContext (in JsonContext.cs) is declared like this:
+
+  [JsonSourceGenerationOptions(WriteIndented = true, PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+  [JsonSerializable(typeof(Invoice))]
+  internal partial class InvoiceJsonContext : JsonSerializerContext;
+
+That partial class has NO body that we wrote. A Roslyn source generator
+filled it in during the build. Proof, read from the compiled assembly:
+
+  type     : Metaprogramming.SerializationDemo.InvoiceJsonContext
+  base     : JsonSerializerContext
+  generated properties:
+    JsonTypeInfo`1 Decimal
+    JsonTypeInfo`1 Invoice
+    JsonTypeInfo`1 InvoiceLine
+    JsonTypeInfo`1 InvoiceStatus
+    JsonTypeInfo`1 ListInvoiceLine
+    JsonTypeInfo`1 DateOnly
+    JsonTypeInfo`1 Int32
+    JsonTypeInfo`1 String
+
+Serializing through the generated metadata:
+
+{
+  "customerName": "Nila Traders",
+  "invoice_id": 4201,
+  "issuedOn": "2026-11-10",
+  "amountDue": 18750.50,
+  "status": "AwaitingPayment",
+  "lines": [
+    {
+      "description": "Mechanical Keyboard",
+      "quantity": 2,
+      "unitPrice": 4999.00
+    },
+    {
+      "description": "USB-C Dock",
+      "quantity": 1,
+      "unitPrice": 8752.50
+    }
+  ]
+}
+
+What is different about this call:
+  - No type was reflected over at run time. The read plan was compiled in.
+  - The generated code calls the property getters DIRECTLY, by name.
+  - Because nothing is discovered dynamically, the trimmer can see everything,
+    so this works under trimming and Native AOT where reflection mode warns or fails.
+  - Startup is faster: no first-call reflection cost for this type.
+
+==============================================================================
+6. SAME INPUT, SAME OUTPUT, DIFFERENT MECHANISM
+==============================================================================
+Reflection mode output:
+  {"customerName":"Nila Traders","invoice_id":4201,"issuedOn":"2026-11-10","amountDue":18750.50,"status":"AwaitingPayment","lines":[{"description":"Mechanical Keyboard","quantity":2,"unitPrice":4999.00},{"description":"USB-C Dock","quantity":1,"unitPrice":8752.50}]}
+
+Source-generated output:
+  {"customerName":"Nila Traders","invoice_id":4201,"issuedOn":"2026-11-10","amountDue":18750.50,"status":"AwaitingPayment","lines":[{"description":"Mechanical Keyboard","quantity":2,"unitPrice":4999.00},{"description":"USB-C Dock","quantity":1,"unitPrice":8752.50}]}
+
+Byte-for-byte identical: True
+
+  aspect              reflection mode              source-generated mode
+  -----------------------------------------------------------------------------
+  when the plan is    first call, at run time      during the build
+    built
+  mechanism           System.Reflection, then      Roslyn generator emits C#
+                      generated accessors
+  startup cost        pay on first use per type    none
+  trimming            unsafe: members may be       safe: all usage is visible
+                      trimmed away
+  Native AOT          not supported               supported
+  new type support    automatic                   add [JsonSerializable] and rebuild
+  polymorphism, dy-   more flexible                more restricted
+    namic shapes
+
+This is the Part 1 slide made concrete. Same goal, same output, and the only
+real difference is WHEN the metaprogramming happened: build time or run time.
+
+==============================================================================
+7. ROUND-TRIPPING, AND HOW DESERIALIZATION DIFFERS
+==============================================================================
+Round-tripped through JSON and back:
+  InvoiceId     : 4201
+  CustomerName  : Nila Traders
+  IssuedOn      : 11/10/2026
+  AmountDue     : 18750.50
+  Status        : AwaitingPayment
+  Lines         : 2 line(s)
+  Total         : 18,750.50
+
+  InternalNotes : (null)  <- [JsonIgnore] means it was never written, so it cannot come back
+
+Why deserialization is harder than serialization:
+  - Writing only needs a getter. Reading needs to CREATE the object first.
+  - It must choose a constructor, then match JSON names to parameters.
+  - For init-only or readonly members it has to use the constructor, not setters.
+  - Missing members, extra members and nulls all need a policy.
+
+This is the same constructor-selection problem the DI container solves in
+example 07, and the same one Activator.CreateInstance faces in example 02.
+Three unrelated-looking features, one underlying metadata question.
+
+Malformed input is a runtime error, as always with metadata-driven code.
+Note the property name has to be the one the metadata declares - "invoice_id",
+not "invoiceId" - because [JsonPropertyName] renamed it:
+  JsonException: The JSON value could not be converted to System.Int32.
+
+And an UNKNOWN property is silently ignored by default, which surprises people:
+  deserialized InvoiceId = 99, unknown member discarded
+  set JsonSerializerOptions.UnmappedMemberHandling = Disallow to make that an error.
+
+==============================================================================
+8. WHICH MODE TO CHOOSE
+==============================================================================
+Use SOURCE GENERATION when:
+  - you are publishing Native AOT or trimmed (a Blazor WASM or container image);
+  - startup time matters (serverless, CLI tools);
+  - the set of serialized types is known at build time, which is the usual case.
+
+Use REFLECTION MODE when:
+  - the types are genuinely not known until run time (a plugin's own models);
+  - you need the more dynamic features, such as broad polymorphic support;
+  - you are prototyping and do not want the extra declaration.
+
+In both modes, the single highest-value habit: ONE cached JsonSerializerOptions
+(or one context) for the lifetime of the application. Section 3 measured why.
+
+Where else this exact pattern appears in .NET:
+  - the regex source generator vs RegexOptions.Compiled
+  - the logging source generator ([LoggerMessage]) vs reflection-based formatting
+  - the configuration binder source generator vs reflective binding
+  - minimal API request-delegate generation
+
+The direction of travel in .NET is clear: move metaprogramming from run time to
+build time where the shape is statically known, and keep reflection for the
+cases where it genuinely is not.

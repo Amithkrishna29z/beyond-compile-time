@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1288 378" width="1288" height="378" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+<defs>
+<marker id="a-default" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#4C8DFF"/></marker>
+<marker id="a-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2CD8E8"/></marker>
+<marker id="a-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#A98BFF"/></marker>
+<marker id="a-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6F82A4"/></marker>
+<marker id="a-ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#3FD69B"/></marker>
+<marker id="a-warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FFC24B"/></marker>
+<marker id="a-bad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FF7B7B"/></marker>
+</defs>
+<rect width="1288" height="378" fill="#0E1628"/>
+<text x="24" y="17" fill="#6F82A4" font-size="13">Compile-time vs runtime metaprogramming</text>
+<g transform="translate(24,32)">
+<rect x="250" y="4" width="230" height="28" rx="9" fill="none" stroke="#2C3A5C" stroke-width="1.6" stroke-dasharray="5 4"/>
+<text x="365.0" y="23.1" fill="#6F82A4" font-size="14.2" text-anchor="middle" font-weight="600" >BUILD TIME</text>
+<rect x="520" y="4" width="690" height="28" rx="9" fill="none" stroke="#2C3A5C" stroke-width="1.6" stroke-dasharray="5 4"/>
+<text x="865.0" y="23.1" fill="#6F82A4" font-size="14.2" text-anchor="middle" font-weight="600" >RUN TIME</text>
+<rect x="30" y="46" width="180" height="70" rx="9" fill="#1F2C4A" stroke="#4C8DFF" stroke-width="1.6"/>
+<text x="120.0" y="86.1" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >Your C#</text>
+<rect x="250" y="46" width="230" height="70" rx="9" fill="#1D3A6B" stroke="#2CD8E8" stroke-width="1.6"/>
+<text x="365.0" y="76.8" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >Roslyn (csc)</text>
+<text x="365.0" y="95.4" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >+ source generators</text>
+<rect x="520" y="36" width="240" height="90" rx="9" fill="#2A2250" stroke="#A98BFF" stroke-width="1.6"/>
+<text x="640.0" y="76.8" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >Assembly</text>
+<text x="640.0" y="95.4" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >IL + METADATA</text>
+<rect x="800" y="46" width="160" height="70" rx="9" fill="#1F2C4A" stroke="#4C8DFF" stroke-width="1.6"/>
+<text x="880.0" y="86.1" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >JIT</text>
+<rect x="1000" y="46" width="210" height="70" rx="9" fill="#13342A" stroke="#3FD69B" stroke-width="1.6"/>
+<text x="1105.0" y="86.1" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >Machine code</text>
+<rect x="250" y="150" width="230" height="62" rx="9" fill="#3A2A12" stroke="#FFC24B" stroke-width="1.6"/>
+<text x="365.0" y="176.8" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >compile-time</text>
+<text x="365.0" y="195.4" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >GENERATION</text>
+<rect x="520" y="150" width="240" height="62" rx="9" fill="#1D3A6B" stroke="#2CD8E8" stroke-width="1.6"/>
+<text x="640.0" y="176.8" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >Part 2</text>
+<text x="640.0" y="195.4" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >READS this</text>
+<rect x="800" y="150" width="160" height="62" rx="9" fill="#2A2250" stroke="#A98BFF" stroke-width="1.6"/>
+<text x="880.0" y="176.8" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >Part 3 adds</text>
+<text x="880.0" y="195.4" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >NEW IL here</text>
+<rect x="30" y="248" width="1180" height="54" rx="9" fill="none" stroke="#2C3A5C" stroke-width="1.6" stroke-dasharray="5 4"/>
+<text x="620.0" y="280.1" fill="#6F82A4" font-size="14.2" text-anchor="middle" >Three different stages. Confusing them is the most common conceptual error in this subject.</text>
+<line x1="210.0" y1="81.0" x2="250.0" y2="81.0" stroke="#4C8DFF" stroke-width="2" marker-end="url(#a-default)"/>
+<line x1="480.0" y1="81.0" x2="520.0" y2="81.0" stroke="#4C8DFF" stroke-width="2" marker-end="url(#a-default)"/>
+<line x1="760.0" y1="81.0" x2="800.0" y2="81.0" stroke="#4C8DFF" stroke-width="2" marker-end="url(#a-default)"/>
+<line x1="960.0" y1="81.0" x2="1000.0" y2="81.0" stroke="#4C8DFF" stroke-width="2" marker-end="url(#a-default)"/>
+<line x1="365.0" y1="116.0" x2="365.0" y2="150.0" stroke="#6F82A4" stroke-width="2" marker-end="url(#a-muted)"/>
+<line x1="640.0" y1="126.0" x2="640.0" y2="150.0" stroke="#6F82A4" stroke-width="2" marker-end="url(#a-muted)"/>
+<line x1="880.0" y1="116.0" x2="880.0" y2="150.0" stroke="#6F82A4" stroke-width="2" marker-end="url(#a-muted)"/>
+</g></svg>

@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1288 468" width="1288" height="468" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+<defs>
+<marker id="a-default" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#4C8DFF"/></marker>
+<marker id="a-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2CD8E8"/></marker>
+<marker id="a-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#A98BFF"/></marker>
+<marker id="a-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6F82A4"/></marker>
+<marker id="a-ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#3FD69B"/></marker>
+<marker id="a-warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FFC24B"/></marker>
+<marker id="a-bad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FF7B7B"/></marker>
+</defs>
+<rect width="1288" height="468" fill="#0E1628"/>
+<text x="24" y="17" fill="#6F82A4" font-size="13">DynamicMethod generation pipeline</text>
+<g transform="translate(24,32)">
+<rect x="16" y="74" width="180" height="88" rx="9" fill="#1F2C4A" stroke="#4C8DFF" stroke-width="1.6"/>
+<text x="106.0" y="114.5" fill="#E9EEF9" font-size="11.8" text-anchor="middle" >new DynamicMethod</text>
+<text x="106.0" y="130.0" fill="#E9EEF9" font-size="11.8" text-anchor="middle" >(name, ret, params)</text>
+<rect x="222" y="74" width="180" height="88" rx="9" fill="#1D3A6B" stroke="#2CD8E8" stroke-width="1.6"/>
+<text x="312.0" y="122.7" fill="#E9EEF9" font-size="13.0" text-anchor="middle" >GetILGenerator()</text>
+<rect x="428" y="74" width="180" height="88" rx="9" fill="#2A2250" stroke="#A98BFF" stroke-width="1.6"/>
+<text x="518.0" y="114.1" fill="#E9EEF9" font-size="13.0" text-anchor="middle" >Emit(OpCodes…)</text>
+<text x="518.0" y="131.2" fill="#E9EEF9" font-size="13.0" text-anchor="middle" >× n</text>
+<rect x="634" y="74" width="180" height="88" rx="9" fill="#1D3A6B" stroke="#2CD8E8" stroke-width="1.6"/>
+<text x="724.0" y="122.2" fill="#E9EEF9" font-size="11.8" text-anchor="middle" >CreateDelegate&lt;T&gt;()</text>
+<rect x="840" y="74" width="180" height="88" rx="9" fill="#3A2A12" stroke="#FFC24B" stroke-width="1.6"/>
+<text x="930.0" y="114.1" fill="#E9EEF9" font-size="13.0" text-anchor="middle" >JIT</text>
+<text x="930.0" y="131.2" fill="#E9EEF9" font-size="13.0" text-anchor="middle" >on FIRST call</text>
+<rect x="1046" y="74" width="180" height="88" rx="9" fill="#13342A" stroke="#3FD69B" stroke-width="1.6"/>
+<text x="1136.0" y="114.1" fill="#E9EEF9" font-size="13.0" text-anchor="middle" >cached delegate</text>
+<text x="1136.0" y="131.2" fill="#E9EEF9" font-size="13.0" text-anchor="middle" >≈ direct speed</text>
+<rect x="428" y="196" width="592" height="54" rx="9" fill="#3A1A1E" stroke="#FF7B7B" stroke-width="1.6"/>
+<text x="724.0" y="219.1" fill="#E9EEF9" font-size="13.0" text-anchor="middle" >Invalid IL is detected HERE — not at Emit().</text>
+<text x="724.0" y="236.2" fill="#E9EEF9" font-size="13.0" text-anchor="middle" >InvalidProgramException, on the first call.</text>
+<rect x="16" y="266" width="1210" height="50" rx="9" fill="#3A2A12" stroke="#FFC24B" stroke-width="1.6"/>
+<text x="621.0" y="296.1" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >CACHE the delegate. Regenerating per call makes this SLOWER than the reflection it replaced.</text>
+<rect x="16" y="334" width="1210" height="56" rx="9" fill="none" stroke="#2C3A5C" stroke-width="1.6" stroke-dasharray="5 4"/>
+<text x="621.0" y="366.7" fill="#6F82A4" font-size="13.0" text-anchor="middle" >Verified on .NET 10: a missing ret threw on first call — but add on an int and a string threw NOTHING and silently returned garbage.</text>
+<line x1="196.0" y1="118.0" x2="222.0" y2="118.0" stroke="#4C8DFF" stroke-width="2" marker-end="url(#a-default)"/>
+<line x1="402.0" y1="118.0" x2="428.0" y2="118.0" stroke="#4C8DFF" stroke-width="2" marker-end="url(#a-default)"/>
+<line x1="608.0" y1="118.0" x2="634.0" y2="118.0" stroke="#4C8DFF" stroke-width="2" marker-end="url(#a-default)"/>
+<line x1="814.0" y1="118.0" x2="840.0" y2="118.0" stroke="#4C8DFF" stroke-width="2" marker-end="url(#a-default)"/>
+<line x1="1020.0" y1="118.0" x2="1046.0" y2="118.0" stroke="#4C8DFF" stroke-width="2" marker-end="url(#a-default)"/>
+<line x1="840.0" y1="118.0" x2="1020.0" y2="223.0" stroke="#FF7B7B" stroke-width="2" marker-end="url(#a-bad)"/>
+</g></svg>

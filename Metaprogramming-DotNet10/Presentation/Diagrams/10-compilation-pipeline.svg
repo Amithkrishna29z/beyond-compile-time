@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1288 438" width="1288" height="438" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+<defs>
+<marker id="a-default" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#4C8DFF"/></marker>
+<marker id="a-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2CD8E8"/></marker>
+<marker id="a-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#A98BFF"/></marker>
+<marker id="a-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6F82A4"/></marker>
+<marker id="a-ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#3FD69B"/></marker>
+<marker id="a-warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FFC24B"/></marker>
+<marker id="a-bad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FF7B7B"/></marker>
+</defs>
+<rect width="1288" height="438" fill="#0E1628"/>
+<text x="24" y="17" fill="#6F82A4" font-size="13">C# → IL → JIT → machine code</text>
+<g transform="translate(24,32)">
+<rect x="24" y="104" width="160" height="72" rx="9" fill="#1F2C4A" stroke="#4C8DFF" stroke-width="1.6"/>
+<text x="104.0" y="145.1" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >C#</text>
+<rect x="224" y="104" width="140" height="72" rx="9" fill="none" stroke="#2C3A5C" stroke-width="1.6" stroke-dasharray="5 4"/>
+<text x="294.0" y="145.1" fill="#6F82A4" font-size="14.2" text-anchor="middle" >csc</text>
+<rect x="404" y="92" width="230" height="96" rx="9" fill="#2A2250" stroke="#A98BFF" stroke-width="1.6"/>
+<text x="519.0" y="135.8" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >IL</text>
+<text x="519.0" y="154.4" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >+ METADATA</text>
+<rect x="674" y="104" width="150" height="72" rx="9" fill="#1D3A6B" stroke="#2CD8E8" stroke-width="1.6"/>
+<text x="749.0" y="145.1" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >JIT</text>
+<rect x="864" y="104" width="200" height="72" rx="9" fill="#13342A" stroke="#3FD69B" stroke-width="1.6"/>
+<text x="964.0" y="145.1" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >Machine code</text>
+<rect x="404" y="234" width="254" height="66" rx="9" fill="#3A1A1E" stroke="#FF7B7B" stroke-width="1.6"/>
+<text x="531.0" y="263.5" fill="#E9EEF9" font-size="11.8" text-anchor="middle" >Native AOT</text>
+<text x="531.0" y="279.0" fill="#E9EEF9" font-size="11.8" text-anchor="middle" >no JIT ships → Emit THROWS</text>
+<rect x="690" y="234" width="250" height="66" rx="9" fill="#18233D" stroke="#2C3A5C" stroke-width="1.6"/>
+<text x="815.0" y="263.5" fill="#9FB0CC" font-size="11.8" text-anchor="middle" >ReadyToRun</text>
+<text x="815.0" y="279.0" fill="#9FB0CC" font-size="11.8" text-anchor="middle" >precompiled, IL fallback</text>
+<rect x="972" y="234" width="244" height="66" rx="9" fill="#3A2A12" stroke="#FFC24B" stroke-width="1.6"/>
+<text x="1094.0" y="263.5" fill="#E9EEF9" font-size="11.8" text-anchor="middle" >Mono interpreter</text>
+<text x="1094.0" y="279.0" fill="#E9EEF9" font-size="11.8" text-anchor="middle" >IL interpreted, not compiled</text>
+<rect x="24" y="326" width="1192" height="48" rx="9" fill="none" stroke="#2C3A5C" stroke-width="1.6" stroke-dasharray="5 4"/>
+<text x="620.0" y="355.1" fill="#6F82A4" font-size="14.2" text-anchor="middle" >Part 2 READS the metadata box.   Part 3 WRITES new IL into it, while the process is running.</text>
+<line x1="184.0" y1="140.0" x2="224.0" y2="140.0" stroke="#6F82A4" stroke-width="2" marker-end="url(#a-muted)"/>
+<line x1="364.0" y1="140.0" x2="404.0" y2="140.0" stroke="#4C8DFF" stroke-width="2" marker-end="url(#a-default)"/>
+<line x1="634.0" y1="140.0" x2="674.0" y2="140.0" stroke="#4C8DFF" stroke-width="2" marker-end="url(#a-default)"/>
+<line x1="824.0" y1="140.0" x2="864.0" y2="140.0" stroke="#4C8DFF" stroke-width="2" marker-end="url(#a-default)"/>
+<line x1="519.0" y1="188.0" x2="531.0" y2="234.0" stroke="#FF7B7B" stroke-width="2" marker-end="url(#a-bad)"/>
+<line x1="749.0" y1="176.0" x2="815.0" y2="234.0" stroke="#6F82A4" stroke-width="2" marker-end="url(#a-muted)"/>
+<line x1="824.0" y1="140.0" x2="972.0" y2="267.0" stroke="#FFC24B" stroke-width="2" marker-end="url(#a-warn)"/>
+</g></svg>

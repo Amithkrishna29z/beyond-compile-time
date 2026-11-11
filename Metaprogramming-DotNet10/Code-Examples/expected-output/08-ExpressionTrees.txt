@@ -1,0 +1,197 @@
+
+==============================================================================
+1. THE SAME LAMBDA, TWO COMPLETELY DIFFERENT THINGS
+==============================================================================
+Source text is identical in both cases: n => n > 18
+
+Func<int, bool>:
+  runtime type : Func`2
+  can call it  : asDelegate(21) = True
+  can read it  : no - the body is compiled IL
+  Method.Name  : <DelegateVersusExpression>b__1_0  (a compiler-generated method)
+
+Expression<Func<int, bool>>:
+  runtime type : Expression1`1
+  NodeType     : Lambda
+  Body         : (n > 18)
+  Body.NodeType: GreaterThan
+  Parameters   : Int32 n
+  ToString()   : n => (n > 18)
+  can call it  : not directly - Compile() first
+
+The difference is decided entirely by the TYPE you assign the lambda to.
+Func<...>       -> compile the body to IL
+Expression<...> -> compile code that builds a description of the body
+
+This is the one place where C# itself is doing compile-time metaprogramming
+on your behalf: it hands you your own source code as inspectable data.
+
+==============================================================================
+2. WALKING THE TREE
+==============================================================================
+Expression: c => c.Age > 18 && c.Country == "IN"
+
+Structure:
+  AndAlso   (BinaryExpression, Boolean)
+    GreaterThan   (BinaryExpression, Boolean)
+      MemberAccess  -> Age : Int32
+        Parameter     -> c : Customer
+      Constant      -> 18 : Int32
+    Equal   (BinaryExpression, Boolean)
+      MemberAccess  -> Country : String
+        Parameter     -> c : Customer
+      Constant      -> IN : String
+
+Reading one branch by hand, to show the nodes are strongly typed:
+  and.NodeType            = AndAlso
+  left.NodeType           = GreaterThan
+  member.Member.Name      = Age   (a Property on Customer)
+  constant.Value          = 18 (Int32)
+
+Because every node is an object, a library can ask questions such as
+'which property is being compared, and to what?' - and that is precisely
+the question a SQL translator has to answer.
+
+==============================================================================
+3. Compile() - FROM DATA BACK TO EXECUTABLE CODE
+==============================================================================
+predicate.Compile() returned a Func`2
+
+  Asha   age 29 IN  -> True
+  Ravi   age 16 IN  -> False
+  Mia    age 34 US  -> False
+
+Important cost note: Compile() is EXPENSIVE - it generates and JITs code.
+Compile once, cache the delegate, call it many times. Compiling inside a loop
+or per web request is one of the most common performance mistakes with this API.
+
+Note also: Compile() needs runtime code generation, so under Native AOT it is
+not available in the usual sense. Expression trees can still be BUILT and READ
+there - which is why EF Core can translate queries to SQL under AOT, because
+translation only reads the tree. It is Compile() that needs the JIT.
+
+==============================================================================
+4. BUILDING AN EXPRESSION FROM SCRATCH (no lambda syntax at all)
+==============================================================================
+Goal: build (a, b) => (a + b) * 2 without writing a lambda.
+
+  Expression.Parameter(typeof(int), "a")   -> a
+  Expression.Parameter(typeof(int), "b")   -> b
+  Expression.Add(a, b)                     -> (a + b)
+  Expression.Constant(2)                   -> 2
+  Expression.Multiply(sum, two)            -> ((a + b) * 2)
+  Expression.Lambda<Func<int,int,int>>(..)  -> (a, b) => ((a + b) * 2)
+
+  fn(3, 4)   = 14
+  fn(10, 11) = 42
+
+Compare this with example 05, which built the same kind of function in IL:
+  Reflection.Emit : ldarg.0 / ldarg.1 / add / ldc.i4.2 / mul / ret
+  Expression tree : Add(a, b) -> Multiply(..., 2) -> Lambda
+
+Same speed class after compilation, but the expression version is type-checked
+as you build it, readable, and it can be printed. Expression.Add would THROW
+immediately if you passed it an int and a string - IL would have silently
+produced garbage, as example 05 demonstrated.
+
+Prefer expression trees over Reflection.Emit whenever you need a FUNCTION.
+Reach for Emit only when you need a TYPE, which Expression cannot create.
+
+==============================================================================
+5. A DYNAMIC FILTER BUILT FROM RUNTIME INPUT
+==============================================================================
+Filters supplied at runtime: Age>21, Country=IN
+
+Expression built from those filters:
+  x => ((x.Age > 21) AndAlso (x.Country == "IN"))
+
+Matches:
+  Asha (29, IN)
+  Deepa (41, IN)
+
+Why an expression and not a Func here? Because the SAME object can either be
+compiled and run in memory, as above, or handed to EF Core and turned into a
+SQL WHERE clause. A Func could only ever do the first.
+
+==============================================================================
+6. REWRITING A TREE WITH ExpressionVisitor
+==============================================================================
+Original : c => ((c.Age > 18) AndAlso (c.Country == "IN"))
+Rewritten: c => ((c.Age > 21) AndAlso (c.Country == "IN"))   (every int constant raised by 3)
+
+Nithya is 20 and in IN:
+  original (Age > 18) -> True
+  rewritten (Age > 21)-> False
+
+Also useful: a visitor that only COUNTS things, without rewriting.
+  node census of the original tree:
+    Parameter x 3
+    MemberAccess x 2
+    Constant x 2
+    Lambda x 1
+    AndAlso x 1
+    GreaterThan x 1
+    Equal x 1
+
+ExpressionVisitor is the standard way to process trees. EF Core's query
+pipeline is a long chain of visitors, each one rewriting the tree a little
+closer to something that can be printed as SQL.
+
+==============================================================================
+7. IQueryable - WHY LINQ PROVIDERS NEED EXPRESSIONS
+==============================================================================
+IEnumerable<Customer>.Where(...)
+  Where's parameter type: Func<Customer, bool>
+  the lambda is COMPILED CODE, executed per element, in this process
+  result: Asha, Deepa
+
+IQueryable<Customer>.Where(...).OrderBy(...)
+  Where's parameter type: Expression<Func<Customer, bool>>
+  nothing has executed yet. What exists is an expression tree:
+
+  Metaprogramming.ExpressionTreesDemo.Customer[]
+    .Where(c => ((c.Age > 18) AndAlso (c.Country == "IN")))
+    .OrderBy(c => c.Name)
+
+  provider: EnumerableQuery`1
+  element : Customer
+  result (on enumeration): Asha, Deepa
+
+Swap the provider and the SAME tree has a different destiny:
+  EnumerableQuery (here) -> Compile() the tree, run it in memory
+  EF Core                -> translate the tree to SQL, run it in the database
+  an HTTP/OData provider -> translate the tree to a URL query string
+
+That substitutability is the entire reason LINQ providers can exist, and it
+works only because the query arrived as DATA rather than as compiled code.
+Example 11 shows the EF Core side, with the real generated SQL.
+
+==============================================================================
+8. WHAT EXPRESSION TREES CANNOT DO
+==============================================================================
+A. Not every C# construct can appear in an Expression<TDelegate>.
+   The C# compiler REJECTS these at build time inside an expression lambda:
+     - statement bodies:   x => { var y = x * 2; return y; }
+     - assignment:         x => x = 5
+     - await:              x => await FooAsync(x)
+     - ref/out arguments, unsafe code, lambdas with dynamic
+     - null-propagating ?. and some pattern-matching forms
+   Those are compile errors, not runtime failures. (The underlying
+   System.Linq.Expressions API can represent blocks and assignment via
+   Expression.Block and Expression.Assign - the C# LAMBDA SYNTAX cannot.)
+
+B. Not every valid expression tree can be translated by a given provider.
+   This is a separate, later failure, and it surfaces at RUNTIME:
+     customers.AsQueryable().Where(c => IsVipCustomer(c.Name)) ->
+       LINQ to Objects ran it happily: 1 match(es).
+       EF Core would throw InvalidOperationException: 'could not be translated'.
+
+   The distinction worth teaching:
+     'cannot be EXPRESSED as a tree' -> a C# compile error.
+     'cannot be TRANSLATED to SQL'   -> a provider exception at run time.
+   Those are different failures with different fixes, and they are easy to
+   confuse because both are described as 'expression trees do not support that'.
+
+C. Compile() is slow and needs dynamic code support (no Native AOT).
+D. A tree is immutable: every 'change' allocates a new tree.
+E. Debugging a compiled expression gives you no source to step through.

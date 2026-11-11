@@ -1,0 +1,182 @@
+
+==============================================================================
+1. WHAT .NET 10 ACTUALLY SUPPORTS (checked at runtime, not from memory)
+==============================================================================
+Runtime: .NET 10.0.11
+
+AssemblyBuilderAccess members that exist on this runtime:
+  AssemblyBuilderAccess.Run
+  AssemblyBuilderAccess.RunAndCollect
+
+Note what is NOT in that list: Save and RunAndSave.
+Those were .NET Framework members. Tutorials that call
+  AssemblyBuilder.DefineDynamicAssembly(name, AssemblyBuilderAccess.RunAndSave)
+  followed by assemblyBuilder.Save("Out.dll")
+do not compile on modern .NET at all.
+
+Does the runtime AssemblyBuilder have a Save(string) method? no
+Concrete runtime builder type: RuntimeAssemblyBuilder
+AssemblyBuilder is declared in: System.Private.CoreLib
+
+Saving IS supported on .NET 10 - through a different class:
+  System.Reflection.Emit.PersistedAssemblyBuilder, from the System.Reflection.Emit assembly.
+  (added in .NET 9; section 6 below actually writes and reloads a DLL)
+
+So the honest summary for .NET 10:
+  run-only, in-memory generation -> AssemblyBuilder.DefineDynamicAssembly(..., Run)
+  collectible/unloadable         -> ..., RunAndCollect
+  save a .dll to disk            -> new PersistedAssemblyBuilder(...).Save(path)
+  a PersistedAssemblyBuilder is for WRITING, not for running the types it defines.
+
+==============================================================================
+2. THE BUILDER HIERARCHY - assembly, module, type, member
+==============================================================================
+  AssemblyBuilder   one logical assembly, with a name and a version
+      |
+      +-- ModuleBuilder    one physical container of types (normally exactly one)
+              |
+              +-- TypeBuilder     one class, struct, interface or enum
+                      |
+                      +-- FieldBuilder        a field
+                      +-- ConstructorBuilder  a constructor
+                      +-- MethodBuilder       a method (holds an ILGenerator)
+                      +-- PropertyBuilder     a property (needs get/set methods)
+
+The mapping is exactly the .NET metadata layout from Part 2, built in reverse:
+Part 2 READ Assembly -> Type -> Member. Here we WRITE the same hierarchy.
+
+One rule governs the whole thing:
+  TypeBuilder.CreateType() 'bakes' the type. Before that call the type does not
+  exist and cannot be instantiated. After it, nothing more can be added.
+
+==============================================================================
+3. GENERATING A COMPLETE TYPE, STAGE BY STAGE
+==============================================================================
+Goal - generate the equivalent of this C#, without a compiler:
+
+    public class Scaler : IScaler
+    {
+        private readonly int _factor;
+        public Scaler(int factor) { _factor = factor; }
+        public int Factor => _factor;
+        public int Scale(int value) => _factor * value;
+    }
+
+Stage 1  AssemblyBuilder.DefineDynamicAssembly("Metaprogramming.Generated", Run)
+         IsDynamic = True, Location = "" (empty: it is not a file)
+Stage 2  DefineDynamicModule("MainModule")
+Stage 3  DefineType("Metaprogramming.Generated.Scaler") + AddInterfaceImplementation(IScaler)
+Stage 4  DefineField("_factor", int, Private | InitOnly)
+Stage 5  DefineConstructor(int) + IL:
+           ldarg.0 / call object::.ctor() / ldarg.0 / ldarg.1 / stfld _factor / ret
+         note: ldarg.0 is 'this' here, because this is an INSTANCE method,
+         so the real parameter is ldarg.1. Static methods start at ldarg.0.
+Stage 6  DefineMethod("Scale", int, [int]) + IL:
+           ldarg.0 / ldfld _factor / ldarg.1 / mul / ret
+         + DefineMethodOverride(Scale, IScaler.Scale)
+Stage 7  DefineMethod("get_Factor") + DefineProperty("Factor").SetGetMethod(...)
+         a property in metadata is just a name bound to accessor methods.
+Stage 8  CreateType()  ->  Metaprogramming.Generated.Scaler
+
+Before CreateType() the type was a description. After it, the runtime has a real
+Type with metadata and IL, indistinguishable from a compiled one to its callers.
+
+==============================================================================
+4. USING THE GENERATED TYPE
+==============================================================================
+Activator.CreateInstance(generated, 7) -> Metaprogramming.Generated.Scaler
+
+Reflective invocation:
+  Scale(6)  = 42
+  Scale(10) = 70
+  Factor    = 7
+
+Through the IScaler interface - no reflection at the call site:
+  scaler.Scale(6)  = 42
+  scaler.Scale(10) = 70
+
+Each instance keeps its own _factor, as a real field should:
+  new Scaler(2).Scale(5) = 10
+  new Scaler(3).Scale(5) = 15
+  new Scaler(100).Scale(5) = 500
+
+This interface trick is the whole design pattern behind runtime type generation:
+generate a type that implements a KNOWN contract, then talk to it through that
+contract. Reflection is used once, at creation; never on the hot path.
+
+==============================================================================
+5. INSPECTING THE GENERATED TYPE WITH REFLECTION
+==============================================================================
+Name            : Metaprogramming.Generated.Scaler
+Assembly        : Metaprogramming.Generated (IsDynamic=True)
+Module          : <In Memory Module>
+BaseType        : Object
+Interfaces      : IScaler
+IsSealed        : True
+
+Constructors:
+  .ctor(Int32 factor)
+
+Methods (declared only):
+  Int32 Scale(Int32 value)  [virtual]
+  Int32 get_Factor()
+
+Properties:
+  Int32 Factor { get; }
+
+Fields (including private):
+  private readonly Int32 _factor
+
+Part 2's reflection code works on this type unchanged. Generated metadata and
+compiled metadata are the same kind of thing.
+
+==============================================================================
+6. PERSISTING A GENERATED ASSEMBLY TO DISK (PersistedAssemblyBuilder)
+==============================================================================
+Wrote a real assembly to disk:
+  path  : C:\Users\amith\OneDrive\Desktop\Documentations\sanjay kmug session\Metaprogramming-DotNet10\Code-Examples\06-ReflectionEmit\bin\Release\net10.0\Metaprogramming.Saved.dll
+  exists: True
+  bytes : 2048
+
+Loaded that file back in and invoked it:
+  assembly  : Metaprogramming.Saved v1.0.0.0
+  IsDynamic : False  (false - it came from a file)
+  Add(20,22)= 42
+  Square(9) = 81
+
+Why persistence is worth knowing about:
+  - you can open the result in ILSpy or ildasm and READ the IL you emitted,
+    which turns IL debugging from guesswork into inspection;
+  - you can run ILVerify over it to catch invalid IL properly;
+  - build-time tools can emit an assembly for later consumption.
+
+Two cautions:
+  - PersistedAssemblyBuilder is for WRITING. Do not expect to execute its types
+    directly; save, then load the file (as above), or use the Run builder instead.
+  - Save() needs the IL to be complete. CreateType() on every TypeBuilder first.
+
+==============================================================================
+7. LIMITS AND TRADEOFFS
+==============================================================================
+Who really does this in production:
+  - Castle DynamicProxy / Moq / NSubstitute: generate proxy and mock TYPES
+  - EF Core: lazy-loading proxies
+  - Serializers and mappers: generated read/write members
+  - Regex with RegexOptions.Compiled: emits a matcher
+
+Costs you are accepting:
+  - Native AOT: unavailable. RuntimeFeature.IsDynamicCodeSupported is false and
+    these APIs throw PlatformNotSupportedException.
+  - Trimming: the trimmer cannot see types that do not exist yet.
+  - First-use latency: building plus JIT-ing costs real milliseconds. Cache the
+    generated Type; never regenerate per request.
+  - Run-only assemblies are NOT collectible unless you use RunAndCollect, and a
+    cached Type keeps the whole context alive (see example 04's unload section).
+  - Verbosity: the 60-odd lines above replace 6 lines of C#.
+
+Before writing any of this, check in order:
+  1. Generics or a cached delegate.
+  2. DispatchProxy, if you only need to intercept an INTERFACE (example 12).
+  3. Expression trees, if you need a compiled FUNCTION rather than a TYPE (example 08).
+  4. A Roslyn source generator, if the shape is known at build time.
+  5. TypeBuilder - only when you genuinely need a new TYPE at run time.

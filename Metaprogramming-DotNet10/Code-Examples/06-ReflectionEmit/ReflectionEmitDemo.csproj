@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Metaprogramming.ReflectionEmitDemo</RootNamespace>
+    <AssemblyName>ReflectionEmitDemo</AssemblyName>
+  </PropertyGroup>
+
+  <!--
+    No package reference is needed for PersistedAssemblyBuilder.
+    It ships in the System.Reflection.Emit assembly inside the net10.0 shared framework.
+  -->
+
+</Project>

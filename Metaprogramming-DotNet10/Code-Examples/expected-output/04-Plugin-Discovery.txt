@@ -1,0 +1,105 @@
+
+==============================================================================
+1. IN-PROCESS DISCOVERY - plugins compiled into the host
+==============================================================================
+Scanned PluginHost, found 2 declared plugin(s):
+  [order 1] Host Health Check v1.0.0  -> HealthCheckPlugin
+  [order 2] Loaded Assemblies v1.0.0  -> AssemblyListPlugin
+
+Activating and running them:
+  --- health ---
+    Runtime     : .NET 10.0.11
+    Process bits: 64
+    Load contexts: 1
+  --- assemblies ---
+    PluginDiscovery assemblies currently loaded:
+      PluginDiscovery.Contracts
+
+==============================================================================
+2. ON-DISK DISCOVERY - assemblies the host never referenced
+==============================================================================
+Plugin folder: C:\Users\amith\OneDrive\Desktop\Documentations\sanjay kmug session\Metaprogramming-DotNet10\Code-Examples\04-Plugin-Discovery\PluginDiscovery.Host\bin\Release\net10.0\plugins
+Candidate assemblies: PluginDiscovery.Plugins.Sales.dll
+
+Loaded PluginDiscovery.Plugins.Sales v1.0.0.0
+  into load context: PluginALC:PluginDiscovery.Plugins.Sales
+  collectible      : True
+  accepted MonthlySalesPlugin as "Monthly Sales Summary" v2.1.0
+  accepted TopCustomersPlugin as "Top Customers" v2.1.0
+  skipped ExperimentalForecastPlugin - [ReportPlugin(Enabled = false)]
+  skipped UnannotatedHelperPlugin - implements IReportPlugin but has no [ReportPlugin]
+
+  --- monthly-sales ---
+    Monthly sales for 2026-11
+      South 418,500.00
+      West  302,750.00
+      North 211,000.00
+      TOTAL 932,250.00
+      (rendered by PluginDiscovery.Plugins.Sales v1.0.0.0)
+  --- top-customers ---
+    Top 2 customers:
+      1. Nila Traders
+      2. Kochi Hardware
+
+The host's code above mentions no plugin class by name. Adding a DLL to the folder
+adds a feature; no host rebuild, no host edit.
+
+==============================================================================
+3. TYPE IDENTITY ACROSS LOAD CONTEXTS
+==============================================================================
+Host's   IReportPlugin is from PluginDiscovery.Contracts in context Default
+Plugin's IReportPlugin is from PluginDiscovery.Contracts in context Default
+
+Same CLR type? True
+Cast works?    True
+
+If PluginLoadContext had loaded its own copy of the contracts assembly, both lines
+above would be False and the cast would throw InvalidCastException - with an error
+message naming the SAME type twice. That confusing message is the signature
+symptom of a duplicated contract assembly.
+
+==============================================================================
+4. UNLOADING A COLLECTIBLE AssemblyLoadContext
+==============================================================================
+Ran "monthly-sales" inside collectible context PluginALC:PluginDiscovery.Plugins.Sales
+  first output line: Monthly sales for 2026-11
+Unload() has been requested. Now the GC has to actually collect it.
+  collection attempt 1: alive = True
+  collection attempt 2: alive = False
+
+Load context unloaded: True
+
+What keeps a context alive (all of these are common mistakes):
+  - any live instance of a plugin type
+  - a cached Type, MethodInfo or Assembly from the plugin
+  - a delegate pointing at plugin code (an event handler left subscribed)
+  - a static field in the HOST holding any of the above
+
+Also note: unloading frees managed state. It cannot undo side effects the plugin
+already caused, and a plugin that P/Invoked into a native library may pin it.
+
+==============================================================================
+5. SECURITY AND VERSIONING - what this design does NOT give you
+==============================================================================
+AssemblyLoadContext is an ISOLATION boundary for TYPE IDENTITY and VERSIONS.
+It is NOT a security sandbox. A loaded plugin runs with the host's full privileges.
+
+Once you call LoadFromAssemblyPath on an assembly, that code can:
+  - read and write any file the host process can
+  - open sockets, start processes, read environment variables and secrets
+  - use reflection against the host's own private state
+  - call Environment.Exit and take the process down
+
+There is no supported in-process sandbox in modern .NET. Code Access Security (CAS)
+and AppDomain partial trust were .NET Framework features and are gone.
+
+So: only load plugins you trust. If you must run untrusted code, isolate it at the
+OS or platform level - a separate process with a reduced token, a container, a VM,
+or WASM - not with an AssemblyLoadContext.
+
+Practical hardening for a TRUSTED plugin model:
+  - verify a strong name or Authenticode signature before loading
+  - keep the contracts assembly tiny and version it deliberately
+  - inspect metadata with MetadataLoadContext first (no code runs) and reject early
+  - wrap every plugin call in try/catch; one bad plugin should not kill the host
+  - log the assembly path, version and hash of everything you load

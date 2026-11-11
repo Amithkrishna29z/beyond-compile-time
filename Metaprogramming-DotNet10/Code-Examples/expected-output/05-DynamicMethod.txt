@@ -1,0 +1,238 @@
+
+==============================================================================
+0. CAN THIS RUNTIME GENERATE CODE AT ALL?
+==============================================================================
+RuntimeInformation.FrameworkDescription : .NET 10.0.11
+RuntimeFeature.IsDynamicCodeSupported   : True
+RuntimeFeature.IsDynamicCodeCompiled    : True
+
+What these two flags mean:
+  IsDynamicCodeSupported = can I create code at runtime at all?
+    false under Native AOT. Reflection.Emit throws PlatformNotSupportedException there.
+  IsDynamicCodeCompiled  = will that code be JIT-compiled to machine code?
+    false on Mono interpreter builds (e.g. iOS): it works, but runs interpreted.
+
+Library code that emits IL should check IsDynamicCodeSupported and keep a
+reflection-based fallback. That is exactly what System.Text.Json and the
+DI container do internally.
+
+==============================================================================
+1. ldarg.0 / ldarg.1 / add / ret - the canonical Add method
+==============================================================================
+Signature: int Add(int a, int b)
+
+  IL                 | evaluation stack after the instruction (top on the right)
+  -------------------+-------------------------------------------------------
+  ldarg.0            | [ a ]                 push argument 0
+  ldarg.1            | [ a, b ]              push argument 1
+  add                | [ a+b ]               pop two, push their sum
+  ret                | [ ]                   pop the return value and return
+
+add(2, 3)    = 5
+add(40, 2)   = 42
+add(-7, 7)   = 0
+
+Two rules the verifier enforces and that explain most emit bugs:
+  1. The stack must be empty when the method returns (ret pops exactly the
+     return value, nothing more).
+  2. Operand types must match the opcode. 'add' on an int and a string is invalid IL.
+
+Note on argument numbering: for a STATIC method ldarg.0 is the first real argument.
+For an instance method ldarg.0 is 'this' and the first argument is ldarg.1.
+A DynamicMethod declared like this one is static.
+
+==============================================================================
+2. mul - the same shape, one opcode different
+==============================================================================
+Identical IL to Add, with 'mul' instead of 'add':
+  ldarg.0 / ldarg.1 / mul / ret
+
+multiply(6, 7)  = 42
+multiply(12, 12)= 144
+
+Because the opcode is just data, one factory can build all four operators:
+  Build("+")(84, 2) = 86
+  Build("-")(84, 2) = 82
+  Build("*")(84, 2) = 168
+  Build("/")(84, 2) = 42
+
+That is the real shape of runtime code generation: a small interpreter of
+YOUR data (here, an operator string) turned into machine code once, then reused.
+
+==============================================================================
+3. ldc.i4 - pushing CONSTANTS onto the stack
+==============================================================================
+Target: int f(int x) => (x * 2) + 10;
+
+  IL                 | stack after
+  -------------------+----------------------
+  ldarg.0            | [ x ]
+  ldc.i4.2           | [ x, 2 ]        one-byte form for small constants
+  mul                | [ x*2 ]
+  ldc.i4.s 10        | [ x*2, 10 ]     short form, operand fits in a signed byte
+  add                | [ x*2+10 ]
+  ret                | [ ]
+
+  f(0) = 10
+  f(1) = 12
+  f(16) = 42
+  f(100) = 210
+
+The ldc.i4 family, smallest encoding first:
+  ldc.i4.0 .. ldc.i4.8   1 byte, for 0-8
+  ldc.i4.m1              1 byte, for -1
+  ldc.i4.s <sbyte>       2 bytes, for -128..127
+  ldc.i4 <int32>         5 bytes, any 32-bit value
+All four push the same thing; they differ only in how many bytes the IL takes.
+
+==============================================================================
+4. call - invoking an existing method from emitted IL
+==============================================================================
+Target: int f(int a, int b) => Math.Max(a, b) * 10;
+
+  IL                              | stack after
+  --------------------------------+----------------------
+  ldarg.0                         | [ a ]
+  ldarg.1                         | [ a, b ]
+  call int32 Math::Max(int32,int32)| [ max ]        popped 2 args, pushed 1 result
+  ldc.i4.s 10                     | [ max, 10 ]
+  mul                             | [ max*10 ]
+  ret                             | [ ]
+
+  f(3, 9)  = 90
+  f(42, 1) = 420
+
+call vs callvirt:
+  call     - the target is decided now (static methods, non-virtual instance methods).
+  callvirt - the target is looked up from the object's real type at run time, and it
+             also null-checks the receiver. Used for virtual/interface methods.
+
+==============================================================================
+5. newobj - constructing an object from emitted IL
+==============================================================================
+Target: object f(int x, int y) => new Point(x, y);
+
+  IL                          | stack after
+  ----------------------------+----------------------
+  ldarg.0                     | [ x ]
+  ldarg.1                     | [ x, y ]
+  newobj Point::.ctor(int,int)| [ Point ]      popped 2 args, pushed the new reference
+  ret                         | [ ]
+
+  f(3, 4) = Point(3, 4)
+  f(0, 0) = Point(0, 0)
+
+This single instruction is what a hand-written factory, a DI container and
+Activator.CreateInstance all ultimately have to perform.
+Emitting it once and caching the delegate is how containers avoid paying
+reflection costs on every resolve.
+
+==============================================================================
+6. A USEFUL ONE - a fast property getter
+==============================================================================
+Target: object f(object o) => (object)((Employee)o).Salary;
+
+  ldarg.0                      | [ o ]            the untyped instance
+  castclass Employee           | [ Employee ]     checked cast, throws if wrong type
+  callvirt get_Salary()        | [ decimal ]      run the property getter
+  box decimal                  | [ object ]       value type -> heap object
+  ret                          | [ ]
+
+  emitted getter  -> 94500
+  PropertyInfo    -> 94500
+  direct property -> 94500
+
+All three read the same value. The difference is cost per call, measured next.
+
+==============================================================================
+7. PERFORMANCE - direct vs reflection vs cached delegate vs emitted IL
+==============================================================================
+Reading one property 2,000,000 times.
+Warming up (so the JIT has compiled everything before we measure)...
+
+  technique                                total ms    relative to direct
+  -----------------------------------------------------------------------
+  direct C# property access                   11        1.0x
+  PropertyInfo.GetValue                       76        6.9x
+  MethodInfo.Invoke                           69        6.3x
+  cached delegate (typed)                     14        1.3x
+  emitted IL (typed, no box)                  13        1.2x
+  emitted IL (object->object, boxes)          26        2.4x
+
+How to read this:
+  - Reflection is slow PER CALL because every call re-does argument binding,
+    access checks and boxing of arguments and return value.
+  - Emitted IL and a cached delegate land in the same speed class, both far
+    closer to direct access than to reflection. The work happened ONCE.
+  - Compare the last two rows carefully. Same property, same technique; the only
+    difference is the signature. The object->object version pays for a castclass
+    and a decimal box on every call, and that alone costs more than the emit does.
+    Lesson: boxing and signature shape usually dominate - not 'reflection vs emit'.
+  - A cached delegate from MethodInfo gets emit-level speed with NO IL at all.
+    Try this FIRST; reach for Emit only when the shape is not fixed at compile time.
+  - Generation itself is not free: a DynamicMethod costs microseconds to build and
+    JIT. If you call the result once, reflection wins. Amortise, or do not bother.
+
+These numbers are from THIS machine and this run, and Debug vs Release matters.
+Treat the ratios as the lesson, not the absolute milliseconds. For real
+measurements use BenchmarkDotNet, not Stopwatch in a loop.
+
+==============================================================================
+8. WHAT HAPPENS WHEN THE IL IS WRONG
+==============================================================================
+Case A: a method that never returns (no 'ret' at the end).
+  CreateDelegate succeeded - nothing has been verified yet.
+  Calling it...
+  InvalidProgramException on FIRST CALL: Common Language Runtime detected an invalid program.
+
+Case B: a stack TYPE mismatch - 'add' on an int32 and a string reference.
+This one is worse than an exception. Watch what actually happens.
+  No exception. broken(1) returned -1847348479, and again -1847348479.
+  That number is the string's managed reference added to 1 as an integer.
+  It is meaningless, it is not stable across runs, and nothing warned us.
+
+The important detail for debugging: Emit() accepted both of these without complaint.
+Case A was caught by the JIT on first call. Case B was NOT caught at all:
+IL emitted by a fully-trusted DynamicMethod is not type-verified, so a mistake
+can silently produce garbage instead of failing. Memory-unsafe IL in this position
+can corrupt process state rather than throw.
+
+That asymmetry is the real reason to be careful with Emit: your safety net is
+thinner than the C# compiler's, and in some cases there is no net at all.
+
+How to debug emitted IL in practice:
+  - Track the expected stack depth yourself as you emit; assert it returns to 0.
+  - Emit the equivalent C#, compile it, and read the IL with ILSpy or ildasm first.
+  - Generate a PERSISTED assembly (example 06) and run ILVerify or ildasm on it.
+  - Keep emitted methods tiny; put real logic in normal C# helpers and 'call' them.
+
+==============================================================================
+9. DynamicMethod vs MethodBuilder, AND THE LIMITS
+==============================================================================
+DynamicMethod vs MethodBuilder (example 06):
+
+  DynamicMethod
+    - a single standalone method, no declaring type
+    - cheapest option; collectible, so it can be garbage collected
+    - can be given 'restricted skip visibility' to reach private members
+    - cannot be saved to disk, cannot define fields, types or multiple methods
+    - the right tool for accessors, converters, mappers, serializer fast paths
+
+  AssemblyBuilder / TypeBuilder / MethodBuilder
+    - builds whole TYPES: fields, properties, interfaces, several methods
+    - needed for proxies and mock objects that must BE a type
+    - more ceremony; CreateType() must be called before use
+
+Limits that apply to both:
+  - Native AOT: not available. IsDynamicCodeSupported is false and Emit throws.
+  - Trimming: the trimmer cannot see what your IL will reference, so targets may
+    be removed. Annotate with DynamicallyAccessedMembers or avoid trimming.
+  - Debuggability: no source, so breakpoints and readable stack frames are limited.
+  - Maintainability: IL is write-mostly. Expect the next developer to fear it.
+  - Startup cost: generating and JIT-ing takes time on the first call.
+
+Decision order worth memorising:
+  1. Plain C#, generics or a cached delegate.
+  2. Expression trees - same speed class, readable, and AOT-friendlier (example 08).
+  3. A Roslyn source generator, if the shape is known at build time.
+  4. Reflection.Emit - only when the shape is known ONLY at run time.

@@ -1,0 +1,53 @@
+<Solution>
+
+  <Folder Name="/01-Basics/">
+    <Project Path="01-Basics/Basics.csproj" />
+  </Folder>
+
+  <Folder Name="/02-Reflection/">
+    <Project Path="02-Reflection/Reflection.csproj" />
+  </Folder>
+
+  <Folder Name="/03-Attributes/">
+    <Project Path="03-Attributes/Attributes.csproj" />
+  </Folder>
+
+  <Folder Name="/04-Plugin-Discovery/">
+    <Project Path="04-Plugin-Discovery/PluginDiscovery.Contracts/PluginDiscovery.Contracts.csproj" />
+    <Project Path="04-Plugin-Discovery/PluginDiscovery.Host/PluginDiscovery.Host.csproj" />
+    <Project Path="04-Plugin-Discovery/PluginDiscovery.Plugins.Sales/PluginDiscovery.Plugins.Sales.csproj" />
+  </Folder>
+
+  <Folder Name="/05-DynamicMethod/">
+    <Project Path="05-DynamicMethod/DynamicMethodDemo.csproj" />
+  </Folder>
+
+  <Folder Name="/06-ReflectionEmit/">
+    <Project Path="06-ReflectionEmit/ReflectionEmitDemo.csproj" />
+  </Folder>
+
+  <Folder Name="/07-DependencyInjection/">
+    <Project Path="07-DependencyInjection/DependencyInjectionDemo.csproj" />
+  </Folder>
+
+  <Folder Name="/08-ExpressionTrees/">
+    <Project Path="08-ExpressionTrees/ExpressionTreesDemo.csproj" />
+  </Folder>
+
+  <Folder Name="/09-Serialization/">
+    <Project Path="09-Serialization/SerializationDemo.csproj" />
+  </Folder>
+
+  <Folder Name="/10-ASPNetCoreMVC/">
+    <Project Path="10-ASPNetCoreMVC/AspNetCoreMvcDemo.csproj" />
+  </Folder>
+
+  <Folder Name="/11-EntityFrameworkCore/">
+    <Project Path="11-EntityFrameworkCore/EfCoreDemo.csproj" />
+  </Folder>
+
+  <Folder Name="/12-DynamicProxies/">
+    <Project Path="12-DynamicProxies/DynamicProxiesDemo.csproj" />
+  </Folder>
+
+</Solution>

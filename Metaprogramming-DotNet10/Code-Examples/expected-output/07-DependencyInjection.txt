@@ -1,0 +1,176 @@
+
+==============================================================================
+1. THE CONSTRUCTOR IS THE METADATA
+==============================================================================
+OrderService declares one constructor. Reflection reads it as a shopping list:
+
+  needs IOrderRepository       (parameter 'repository')
+  needs IPricingPolicy         (parameter 'pricingPolicy')
+  needs IAuditLog              (parameter 'auditLog')
+  needs IClock                 (parameter 'clock')
+
+Nobody wrote a configuration file listing these. The dependency graph IS the
+constructor signature, and the constructor signature is already in metadata.
+That is the whole insight DI is built on.
+
+==============================================================================
+2. REGISTRATION AND RESOLUTION
+==============================================================================
+Registered 5 services:
+  Singleton IClock               -> SystemClock
+  Singleton IAuditLog            -> InMemoryAuditLog
+  Scoped    IPricingPolicy       -> StandardPricingPolicy
+  Transient IOrderRepository     -> InMemoryOrderRepository
+  Transient OrderService         -> OrderService
+
+provider.GetRequiredService<OrderService>() produced a full object graph:
+  OrderService
+    +-- InMemoryOrderRepository
+    +-- StandardPricingPolicy
+    +-- InMemoryAuditLog
+    +-- SystemClock
+
+Result of using it:
+  Order 1001: 2 x Mechanical Keyboard = 11,797.64 (audit entries: 1)
+
+GetService vs GetRequiredService:
+  GetService<IMissingService>()         = null
+  GetRequiredService<IMissingService>() threw InvalidOperationException:
+    No service for type 'Metaprogramming.DependencyInjectionDemo.IMissingService' has been registered.
+
+==============================================================================
+3. SERVICE LIFETIMES
+==============================================================================
+Resolving each service twice, in two different scopes.
+The number is a per-instance id, so repeats mean 'same object'.
+
+  scope 1:
+    singleton: 1, 1
+    scoped   : 1, 1
+    transient: 1, 2
+  scope 2:
+    singleton: 1, 1
+    scoped   : 2, 2
+    transient: 3, 4
+
+  Singleton - one instance for the whole provider.
+  Scoped    - one instance per scope. In ASP.NET Core, one scope per HTTP request.
+  Transient - a new instance every single time it is asked for.
+
+The classic bug: a SINGLETON that depends on a SCOPED service. The scoped
+instance gets captured for the life of the process. BuildServiceProvider with
+ValidateScopes = true turns that into an exception instead of a slow leak:
+  Cannot consume scoped service 'Metaprogramming.DependencyInjectionDemo.ScopedCounter' from singleton 'Metaprogramming.DependencyInjectionDemo.CaptiveDependencyService'.
+
+==============================================================================
+4. HOW THE CONTAINER PICKS A CONSTRUCTOR
+==============================================================================
+ReportBuilder has three constructors:
+  .ctor()
+  .ctor(IClock)
+  .ctor(IClock, IAuditLog)
+
+Case A: only IClock is registered.
+  chosen -> .ctor(IClock)
+
+Case B: IClock AND IAuditLog are registered.
+  chosen -> .ctor(IClock, IAuditLog)
+
+The rule in Microsoft.Extensions.DependencyInjection: pick the constructor with
+the MOST parameters that the container can satisfy completely. Adding a
+registration can therefore change which constructor runs - as it just did.
+
+Ambiguity is an error, not a guess. Two satisfiable constructors where neither
+parameter set contains the other:
+  InvalidOperationException: Unable to activate type 'Metaprogramming.DependencyInjectionDemo.AmbiguousService'. The following constructors are ambiguous:
+Void .ctor(Metaprogramming.DependencyInjectionDemo.IClock)
+Void .ctor(Metaprogramming.DependencyInjectionDemo.IAuditLog)
+
+Fix it by removing a constructor, or by marking one with
+[ActivatorUtilitiesConstructor] so the choice is explicit.
+
+==============================================================================
+5. ActivatorUtilities - DI for types that are NOT registered
+==============================================================================
+InvoiceGenerator needs IClock (from DI) and a string (from us).
+Activator.CreateInstance cannot help - it knows nothing about IClock.
+
+ActivatorUtilities.CreateInstance<InvoiceGenerator>(provider, "INV-2026-0042"):
+  Invoice INV-2026-0042 dated 2026-11-10 for 2,500.00
+
+ActivatorUtilities.CreateFactory - resolve the plan once, reuse it:
+  Invoice INV-0001 dated 2026-11-10 for 1,000.00
+  Invoice INV-0002 dated 2026-11-10 for 1,000.00
+  Invoice INV-0003 dated 2026-11-10 for 1,000.00
+
+Rule of thumb:
+  GetRequiredService            - the type is registered.
+  ActivatorUtilities.CreateInstance - it is not registered, or needs extra arguments.
+  ActivatorUtilities.CreateFactory  - same, but on a hot path. Cache the factory.
+
+This is exactly how a plugin host should activate plugins that have dependencies,
+instead of the bare Activator.CreateInstance used in example 04.
+
+==============================================================================
+6. CONVENTION-BASED REGISTRATION BY REFLECTION
+==============================================================================
+Convention: every concrete class named *Handler that implements IEventHandler
+is registered as a transient IEventHandler. No per-class registration lines.
+
+  registered EmailNotificationHandler
+  registered InventoryReservationHandler
+  skipped LegacyEventListener - does not match the naming convention
+
+Dispatching one event to all discovered handlers:
+  EmailNotificationHandler queued mail for OrderPlaced at 09:30
+  InventoryReservationHandler reserved stock for OrderPlaced
+
+This reflection happens ONCE at startup. Nothing scans types per request.
+Scanning libraries such as Scrutor package exactly this pattern.
+
+==============================================================================
+7. A 30-LINE CONTAINER, SO THERE IS NO MAGIC LEFT
+==============================================================================
+Resolved by MiniContainer (60 lines, at the bottom of this file):
+  OrderService
+    +-- InMemoryOrderRepository
+    +-- StandardPricingPolicy
+    +-- InMemoryAuditLog
+    +-- SystemClock
+
+  Order 1002: 1 x Desk Lamp = 1,532.82 (audit entries: 1)
+
+MiniContainer is three ideas:
+  1. a dictionary from service type to implementation type;
+  2. GetConstructors() to find out what an implementation needs;
+  3. recursion, then Activator.CreateInstance with the resolved arguments.
+
+A production container adds lifetimes, scopes, disposal, thread safety,
+open generics, cycle detection and a compiled fast path. The CORE IDEA is this.
+
+==============================================================================
+8. WHAT THE REAL CONTAINER ACTUALLY DOES (inspected, not assumed)
+==============================================================================
+Package: Microsoft.Extensions.DependencyInjection 10.0.0.0
+RuntimeFeature.IsDynamicCodeCompiled = True
+
+ServiceProvider's internal engine on THIS runtime: DynamicServiceProviderEngine
+
+Why that matters for how we describe DI:
+  It is accurate to say the container uses REFLECTION to read constructors.
+  It is NOT accurate to say every container uses Reflection.Emit to call them.
+
+Microsoft.Extensions.DependencyInjection chooses an activation strategy at run time:
+  - a reflection-based engine, used immediately and always available;
+  - a faster engine built from compiled expression trees or emitted IL, which it
+    switches to in the background once a service has been resolved enough times;
+  - the reflection-only engine when RuntimeFeature.IsDynamicCodeCompiled is false,
+    which is the Native AOT case.
+
+Other containers differ: some compile expression trees, some emit IL, some do
+neither. 'DI uses reflection' is the safe claim. Anything more specific depends
+on the container, its version and the platform - so check, as we just did.
+
+Also worth saying out loud: constructor injection does not REQUIRE reflection.
+You can wire an entire application by hand with 'new'. DI containers use
+reflection to spare you that wiring, not because the pattern demands it.

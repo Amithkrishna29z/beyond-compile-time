@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1148 584" width="1148" height="584" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+<defs>
+<marker id="a-default" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#4C8DFF"/></marker>
+<marker id="a-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2CD8E8"/></marker>
+<marker id="a-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#A98BFF"/></marker>
+<marker id="a-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6F82A4"/></marker>
+<marker id="a-ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#3FD69B"/></marker>
+<marker id="a-warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FFC24B"/></marker>
+<marker id="a-bad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FF7B7B"/></marker>
+</defs>
+<rect width="1148" height="584" fill="#0E1628"/>
+<text x="24" y="17" fill="#6F82A4" font-size="13">.NET assembly metadata structure</text>
+<g transform="translate(24,32)">
+<rect x="24" y="14" width="1052" height="440" rx="9" fill="none" stroke="#2C3A5C" stroke-width="1.6" stroke-dasharray="5 4"/>
+<text x="36.0" y="36.2" fill="#6F82A4" font-size="14.2" text-anchor="start" font-weight="600" >Assembly  ·  MyApp.dll</text>
+<rect x="58" y="66" width="340" height="58" rx="9" fill="#18233D" stroke="#2C3A5C" stroke-width="1.6"/>
+<text x="228.0" y="91.5" fill="#9FB0CC" font-size="11.8" text-anchor="middle" >Manifest</text>
+<text x="228.0" y="107.0" fill="#9FB0CC" font-size="11.8" text-anchor="middle" >name · version · culture · references</text>
+<rect x="58" y="140" width="984" height="296" rx="9" fill="none" stroke="#2C3A5C" stroke-width="1.6" stroke-dasharray="5 4"/>
+<text x="70.0" y="162.2" fill="#6F82A4" font-size="14.2" text-anchor="start" >Module  ·  MyApp.dll  (usually exactly one)</text>
+<rect x="88" y="192" width="924" height="160" rx="9" fill="none" stroke="#2C3A5C" stroke-width="1.6" stroke-dasharray="5 4"/>
+<text x="100.0" y="214.2" fill="#6F82A4" font-size="14.2" text-anchor="start" >Type  ·  class / struct / interface / enum</text>
+<rect x="104" y="244" width="140" height="68" rx="9" fill="#1F2C4A" stroke="#4C8DFF" stroke-width="1.6"/>
+<text x="174.0" y="274.5" fill="#E9EEF9" font-size="11.8" text-anchor="middle" >Constructor</text>
+<text x="174.0" y="290.0" fill="#E9EEF9" font-size="11.8" text-anchor="middle" >Info</text>
+<rect x="254" y="244" width="140" height="68" rx="9" fill="#1F2C4A" stroke="#4C8DFF" stroke-width="1.6"/>
+<text x="324.0" y="274.5" fill="#E9EEF9" font-size="11.8" text-anchor="middle" >Method</text>
+<text x="324.0" y="290.0" fill="#E9EEF9" font-size="11.8" text-anchor="middle" >Info</text>
+<rect x="404" y="244" width="140" height="68" rx="9" fill="#1F2C4A" stroke="#4C8DFF" stroke-width="1.6"/>
+<text x="474.0" y="274.5" fill="#E9EEF9" font-size="11.8" text-anchor="middle" >Property</text>
+<text x="474.0" y="290.0" fill="#E9EEF9" font-size="11.8" text-anchor="middle" >Info</text>
+<rect x="554" y="244" width="140" height="68" rx="9" fill="#1F2C4A" stroke="#4C8DFF" stroke-width="1.6"/>
+<text x="624.0" y="274.5" fill="#E9EEF9" font-size="11.8" text-anchor="middle" >Field</text>
+<text x="624.0" y="290.0" fill="#E9EEF9" font-size="11.8" text-anchor="middle" >Info</text>
+<rect x="704" y="244" width="140" height="68" rx="9" fill="#1F2C4A" stroke="#4C8DFF" stroke-width="1.6"/>
+<text x="774.0" y="274.5" fill="#E9EEF9" font-size="11.8" text-anchor="middle" >Event</text>
+<text x="774.0" y="290.0" fill="#E9EEF9" font-size="11.8" text-anchor="middle" >Info</text>
+<rect x="854" y="244" width="140" height="68" rx="9" fill="#1F2C4A" stroke="#4C8DFF" stroke-width="1.6"/>
+<text x="924.0" y="274.5" fill="#E9EEF9" font-size="11.8" text-anchor="middle" >Nested</text>
+<text x="924.0" y="290.0" fill="#E9EEF9" font-size="11.8" text-anchor="middle" >Type</text>
+<rect x="88" y="368" width="924" height="50" rx="9" fill="#2A2250" stroke="#A98BFF" stroke-width="1.6"/>
+<text x="550.0" y="397.7" fill="#E9EEF9" font-size="13.0" text-anchor="middle" >Every level above can carry CUSTOM ATTRIBUTES  ·  the CustomAttribute metadata table</text>
+<rect x="24" y="470" width="1052" height="54" rx="9" fill="#1D3A6B" stroke="#2CD8E8" stroke-width="1.6"/>
+<text x="550.0" y="501.7" fill="#E9EEF9" font-size="13.0" text-anchor="middle" >Metadata is REQUIRED, not optional — the CLR needs it to do its own job. That is why reflection works.</text>
+</g></svg>

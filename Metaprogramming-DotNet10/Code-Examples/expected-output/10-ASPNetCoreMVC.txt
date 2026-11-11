@@ -1,0 +1,129 @@
+
+==============================================================================
+1. APPLICATION PARTS - where MVC looks for controllers
+==============================================================================
+ApplicationPartManager.ApplicationParts:
+  AspNetCoreMvcDemo            (AssemblyPart)
+
+Application parts are the SEARCH PATH. By default it holds the entry assembly plus
+any assembly marked with [ApplicationPartAttribute]. Add a part and MVC will find
+controllers in another DLL - which is how a plugin can contribute endpoints.
+
+==============================================================================
+2. CONTROLLER DISCOVERY - the ControllerFeature
+==============================================================================
+Controller types found by reflecting over the application parts:
+  Metaprogramming.AspNetCoreMvcDemo.Controllers.MetadataController
+  Metaprogramming.AspNetCoreMvcDemo.Controllers.ReportsController
+
+The rule MVC applies to a public class, in order:
+  - skip it if it is abstract, generic, or marked [NonController]
+  - accept it if it carries [Controller] or [ApiController]
+  - otherwise accept it if its NAME ends with "Controller"
+
+Note that inheriting from ControllerBase is NOT what makes a class a controller.
+The name suffix or the attribute is. ControllerBase just gives you helpers like Ok().
+
+==============================================================================
+3. ACTION DISCOVERY - the ActionDescriptor table
+==============================================================================
+IActionDescriptorCollectionProvider gives the routing table, version 0:
+
+  METHOD  ROUTE TEMPLATE             CONTROLLER ACTION     PARAMETERS
+  --------------------------------------------------------------------------------------
+  GET     api/metadata/actions       Metadata   Actions    
+  GET     api/reports                Reports    GetAll     
+  POST    api/reports                Reports    Create     CreateReportRequest request
+  GET     api/reports/search         Reports    Search     String term, Int32 take
+  GET     api/reports/{id:int}       Reports    GetById    Int32 id
+
+Where each column came from:
+  METHOD    the [HttpGet] / [HttpPost] attribute on the method
+  ROUTE     [Route] on the class combined with the template on the method
+  ACTION    the reflected MethodInfo.Name
+  PARAMS    reflected ParameterInfo, including [FromQuery] / [FromBody] binding source
+
+Note that ReportsController.InternalHelper is absent: [NonAction] excluded it.
+
+==============================================================================
+4. STARTUP-TIME vs REQUEST-TIME - the point people get wrong
+==============================================================================
+Done ONCE, at startup (what sections 1-3 just showed):
+  - scan application parts for controller types          <- reflection
+  - read routing, filter and binding attributes          <- reflection
+  - build the ActionDescriptor collection and route table
+  - build a compiled/cached activator and model binders per action
+
+Done PER REQUEST:
+  - match the URL against the prepared route table       <- NO type scanning
+  - create the controller through DI
+  - bind parameters using the prepared binders
+  - invoke the action through a cached delegate, not MethodInfo.Invoke
+
+So 'MVC uses reflection, therefore MVC is slow per request' is wrong. The
+reflection is amortised into startup, and this is the single most important
+design lesson to take from the whole session: DISCOVER ONCE, EXECUTE MANY TIMES.
+
+It is also why startup-time matters for serverless, and why minimal APIs plus
+source generation exist: to move even that startup reflection to build time.
+
+==============================================================================
+5. REQUEST-TIME - the discovered routes actually serving traffic
+==============================================================================
+
+GET /api/reports
+  -> 200 OK
+  -> [{"id":1,"title":"Monthly Sales","owner":"asha@example.com"},{"id":2,"title":"Inventory Ageing","owner":"ravi@example.com"},{"id":3,"title":"Sales by Region","owner":"asha@example.com"}]
+
+GET /api/reports/2
+  -> 200 OK
+  -> {"id":2,"title":"Inventory Ageing","owner":"ravi@example.com"}
+
+GET /api/reports/999
+  -> 404 Not Found
+  -> {"message":"No report 999"}
+
+GET /api/reports/search?term=sales&take=2
+  -> 200 OK
+  -> [{"id":1,"title":"Monthly Sales","owner":"asha@example.com"},{"id":3,"title":"Sales by Region","owner":"asha@example.com"}]
+
+GET /api/reports/not-an-int
+  -> 404 Not Found
+  -> 
+
+POST /api/reports   body: {"title":"Quarterly Tax","owner":"deepa@example.com"}
+  -> 201 Created
+  -> Location: http://127.0.0.1:5199/api/reports/4
+  -> {"id":4,"title":"Quarterly Tax","owner":"deepa@example.com"}
+
+POST /api/reports   body: {"title":"x","owner":"not-an-email"}
+  -> 400 Bad Request
+  -> {"type":"https://tools.ietf.org/html/rfc9110#section-15.5.1","title":"One or more validation errors occurred.","status":400,"errors":{"Owner":["The Owner field is not a valid e-mail address."],"Title":["The field Title must be a string with a minimum length of 3 and a maximum length of 60."]},"trace ...
+
+GET /api/metadata/actions
+  -> 200 OK
+  -> [{"controller":"Metadata","action":"Actions","route":"api/metadata/actions","httpMethods":["GET"],"signature":"Actions()","declaringType":"Metaprogramming.AspNetCoreMvcDemo.Controllers.MetadataController"},{"controller":"Reports","action":"Create","route":"api/reports","httpMethods":["POST"],"signat ...
+
+==============================================================================
+6. WHAT THE RESPONSES DEMONSTRATED
+==============================================================================
+  /api/reports/2            route template {id:int} bound "2" to an int parameter
+  /api/reports/999          the action ran and chose NotFound - routing succeeded
+  /api/reports/not-an-int   404 BEFORE the action ran: the :int route CONSTRAINT
+                            rejected it, so no action was selected at all
+  /api/reports/search       [FromQuery] bound term and take, and applied take's
+                            default value of 5 from the method signature
+  POST with a valid body    [FromBody] deserialized JSON into CreateReportRequest
+                            using System.Text.Json (example 09), then returned 201
+                            with a Location header built by CreatedAtAction, which
+                            looked the route up BY ACTION NAME in the same table
+  POST with an invalid body 400 with a ValidationProblemDetails body. We wrote no
+                            validation code: [ApiController] reflected over the
+                            [Required]/[StringLength]/[EmailAddress] attributes
+  /api/metadata/actions     the app describing its own routing table over HTTP
+
+Every one of those behaviours was configured by DECLARING something - an attribute,
+a parameter type, a method name - and never by writing dispatch logic.
+That is the practical value of metadata-driven frameworks.
+
+Self-test complete; server stopped.

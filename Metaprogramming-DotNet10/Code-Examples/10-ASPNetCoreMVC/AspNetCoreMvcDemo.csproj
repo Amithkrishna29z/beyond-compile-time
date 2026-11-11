@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <RootNamespace>Metaprogramming.AspNetCoreMvcDemo</RootNamespace>
+    <AssemblyName>AspNetCoreMvcDemo</AssemblyName>
+    <!-- Keep the demo output readable; we print our own discovery report. -->
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <!--
+    No PackageReference needed: Microsoft.NET.Sdk.Web brings in the
+    Microsoft.AspNetCore.App shared framework, which contains MVC,
+    the DI container and System.Text.Json.
+  -->
+
+</Project>

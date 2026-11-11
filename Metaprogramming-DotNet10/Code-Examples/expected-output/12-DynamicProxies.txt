@@ -1,0 +1,248 @@
+
+==============================================================================
+1. THE PROBLEM - cross-cutting concerns tangled into business code
+==============================================================================
+Here is the service we want: nothing but business logic.
+
+    public decimal GetBalance(string account)
+    {
+        return _balances[account];
+    }
+
+Here is what it usually becomes once the operational requirements land:
+
+    public decimal GetBalance(string account)
+    {
+        _logger.LogInformation("GetBalance {Account}", account);   // logging
+        var sw = Stopwatch.StartNew();                           // metrics
+        if (_cache.TryGetValue(account, out var hit)) return hit; // caching
+        try {
+            var result = _balances[account];                     // the actual work
+            _cache[account] = result;
+            return result;
+        }
+        catch (Exception ex) { _logger.LogError(ex, "..."); throw; }
+        finally { _metrics.Record(sw.Elapsed); }                 // metrics
+    }
+
+One line of business logic, ten lines of plumbing - repeated in every method of
+every service. These are CROSS-CUTTING CONCERNS: orthogonal to the business
+logic, yet physically tangled into it.
+
+A proxy moves that plumbing OUT, into one place, without touching the service.
+
+==============================================================================
+2. DispatchProxy - ONE method intercepts EVERY call
+==============================================================================
+Calls made through the proxy (ordinary C#, no reflection at the call site):
+
+  GetBalance("SB-1001")  = 25400.00
+  Deposit("SB-1001", 500) = 25900.00
+  GetAccountCount()       = 2
+
+What the interceptor recorded, without AccountService knowing it exists:
+
+  --> GetBalance(SB-1001)
+  <-- GetBalance returned 25400.00 in 0.94 ms
+  --> Deposit(SB-1001, 500)
+  <-- Deposit returned 25900.00 in 0.33 ms
+  --> GetAccountCount()
+  <-- GetAccountCount returned 2 in 0.12 ms
+
+AccountService.cs contains no logging code at all. Look at it and check.
+The interception happened because every call to the generated type lands in
+LoggingProxy.Invoke, which decides what to do before and after forwarding.
+
+==============================================================================
+3. WHAT DispatchProxy ACTUALLY CREATED
+==============================================================================
+The object we are holding:
+  type name      : generatedProxy_1
+  full name      : generatedProxy_1
+  base type      : LoggingProxy  <- our LoggingProxy
+  implements     : IAccountService
+  assembly       : ProxyBuilder
+  IsDynamic      : True  <- generated at run time
+
+It is NOT an AccountService:
+  proxied is AccountService  = False
+  proxied is IAccountService = True
+  proxied is DispatchProxy   = True
+
+So DispatchProxy did exactly what example 06 did by hand:
+  defined a type at run time, made it implement a known interface, and created
+  an instance. The difference is that it wrote the TypeBuilder code for us,
+  and every interface method it generated simply calls our Invoke override.
+
+==============================================================================
+4. CACHING, DRIVEN BY AN ATTRIBUTE
+==============================================================================
+IAccountService marks only GetBalance with [Cacheable]:
+  GetBalance         [Cacheable]
+  Deposit            -
+  GetAccountCount    -
+
+Calling GetBalance three times with the same argument:
+  call 1 -> 25400.00   (service hit count: 1)
+  call 2 -> 25400.00   (service hit count: 1)
+  call 3 -> 25400.00   (service hit count: 1)
+
+Calling GetAccountCount three times - NOT marked cacheable:
+  call 1 -> 2
+  call 2 -> 2
+  call 3 -> 2
+
+  cache hits   : 2
+  cache misses : 1
+  the real service was read 1 time(s) for GetBalance
+
+The attribute is the whole policy. Marking a new method [Cacheable] changes
+behaviour with no change to the proxy and no change to the service.
+
+Worth stating clearly: metaprogramming provided the SEAM, not the policy.
+This cache has no expiry, no size limit, no invalidation and no thread safety.
+A real one needs all four - use HybridCache or IMemoryCache, and think about
+correctness. The same applies to authorization: a proxy can be the place you
+enforce a policy, but it does not supply the policy or make it correct.
+
+==============================================================================
+5. RETRIES, AND CORRECT EXCEPTION HANDLING
+==============================================================================
+FlakyGateway fails twice, then succeeds. MaxAttempts = 4.
+
+  result: charged 1,250.00 to CARD-9 on call 3
+
+  attempt 1: TimeoutException - retrying
+  attempt 2: TimeoutException - retrying
+  attempt 3: succeeded
+
+Now one that fails more times than we allow retries:
+  caught TimeoutException: Gateway timed out (call 2).
+
+  Note that we caught TimeoutException, NOT TargetInvocationException.
+  Inside Invoke we called targetMethod.Invoke(...), which wraps any
+  exception from the target in TargetInvocationException. If a proxy lets
+  that escape, every 'catch (TimeoutException)' upstream silently stops
+  matching - a nasty, hard-to-find regression.
+  InterceptingProxy.InvokeTarget unwraps it with ExceptionDispatchInfo,
+  which also preserves the original stack trace.
+
+==============================================================================
+6. STACKING PROXIES
+==============================================================================
+Chain: caller -> LoggingProxy -> CachingProxy -> AccountService
+
+  GetBalance("SB-1001") = 25400.00
+  GetBalance("SB-1001") = 25400.00
+  GetBalance("SB-1001") = 25400.00
+
+Log from the outer proxy:
+  --> GetBalance(SB-1001)
+  <-- GetBalance returned 25400.00 in 0.03 ms
+  --> GetBalance(SB-1001)
+  <-- GetBalance returned 25400.00 in 0.01 ms
+  --> GetBalance(SB-1001)
+  <-- GetBalance returned 25400.00 in 0.01 ms
+
+  cache hits = 2, misses = 1, real service reads = 1
+
+Because each proxy is just another IAccountService, they compose freely.
+Order matters: logging outside caching logs every call; logging inside caching
+would log only the cache misses.
+
+==============================================================================
+7. REGISTERING A PROXY IN THE DI CONTAINER
+==============================================================================
+MonthEndReport asked for IAccountService and got a proxy:
+  injected type: generatedProxy_1
+
+  accounts tracked : 2
+  SB-1001 balance  : 25,400.00
+  SB-1002 balance  : 118,250.75
+
+This is the decorator pattern, with the decorator generated rather than written.
+Scrutor's Decorate<TService, TDecorator>() packages exactly this registration.
+
+In production most teams use Castle DynamicProxy (via Autofac interceptors) or
+a source-generated interceptor instead of DispatchProxy, because those handle
+virtual class methods and async more comfortably. DispatchProxy's advantage is
+that it is built in - no package, no licence question.
+
+==============================================================================
+8. LIMITATIONS OF DispatchProxy
+==============================================================================
+A. INTERFACES ONLY. DispatchProxy cannot proxy a class, sealed or not.
+   Shown with the non-generic overload available on .NET 10,
+   DispatchProxy.Create(Type interfaceType, Type proxyType):
+   ArgumentException: The type 'Metaprogramming.DynamicProxiesDemo.AccountService' must be an interface, not a class. (Parameter 'interfaceType')
+   with an interface instead: created a generatedProxy_1 implementing IAccountService
+
+   Consequence: your services must be behind interfaces for this to be an option.
+   Castle DynamicProxy can also subclass a class, but only intercepts VIRTUAL
+   members - a non-virtual method can never be intercepted by subclassing.
+
+B. THE PROXY BASE CLASS MUST NOT BE SEALED.
+   DispatchProxy.Create generates a type that derives from your proxy class,
+   so 'public sealed class LoggingProxy : DispatchProxy' throws at run time:
+     ArgumentException: The base type '...' cannot be sealed. (Parameter 'TProxy')
+   It must also have an accessible parameterless constructor, which is why
+   configuration happens after creation (SetTarget) rather than in a constructor.
+
+C. ONLY CALLS THROUGH THE INTERFACE ARE INTERCEPTED.
+   proxied.GetBalance(...)  -> intercepted
+   real.GetBalance(...)     -> NOT intercepted (you are holding the real object)
+   A call from one method of AccountService to another is also NOT intercepted,
+   because 'this' inside the service is the real object, not the proxy.
+   That self-call blind spot surprises people and breaks naive caching.
+
+D. ASYNC NEEDS DELIBERATE HANDLING.
+   Invoke returns object?. For an async method that object is a Task, and it is
+   returned the instant the method starts - so a naive stopwatch around
+   InvokeTarget measures only how long it took to CREATE the Task.
+   To time or catch properly you must await the returned Task, which means
+   inspecting the return type and handling Task, Task<T> and ValueTask<T>
+   separately. Section 2's timings are honest here only because IAccountService
+   is entirely synchronous.
+
+E. PER-CALL COST. Every call goes through targetMethod.Invoke, which is the
+   slow reflective path measured in example 05. For a hot inner loop, cache a
+   delegate per MethodInfo, or do not use a proxy.
+
+F. NATIVE AOT. DispatchProxy generates a type at run time, so it needs dynamic
+   code support and does not work under Native AOT.
+   IsDynamicCodeSupported here = True
+
+G. DEBUGGING AND CLARITY. A stack trace now runs through a generated type, and
+   'go to definition' on an interface no longer reaches the code that runs.
+   Interception is powerful precisely because it is invisible, and that is also
+   its main cost to the next person reading the code.
+
+==============================================================================
+9. MIDDLEWARE vs FILTERS vs PROXIES - picking the right seam
+==============================================================================
+  seam              scope                        reaches
+  ------------------------------------------------------------------------
+  Middleware        every HTTP request           the whole pipeline
+  MVC filters       controller actions           per action/controller
+  Dynamic proxies   any interface call           any layer, incl. services
+  Source generators compile time                 anything, with zero runtime cost
+
+Choose by where the concern belongs:
+
+  Authentication, CORS, HTTPS redirect, request logging
+    -> MIDDLEWARE. It is about the HTTP request, not about any one method.
+
+  Model validation, authorization on an action, action result shaping
+    -> FILTERS. They know about MVC concepts such as model state and results.
+
+  Retry on a flaky dependency, caching a repository, auditing domain operations
+    -> PROXIES or hand-written DECORATORS. The concern is about a service
+       interface and applies however that service is called, HTTP or not.
+
+  High-volume logging, serialization, mapping
+    -> SOURCE GENERATORS, when the shape is known at build time.
+
+And the answer that is right more often than any of them: a hand-written
+decorator class. Twenty lines of ordinary C#, fully debuggable, trimmable,
+AOT-safe, and obvious to the next reader. Reach for a generated proxy when the
+number of interfaces makes hand-writing them genuinely impractical.

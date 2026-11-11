@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>PluginDiscovery.Plugins.Sales</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      The plugin compiles against the contracts only.
+      Private=false keeps PluginDiscovery.Contracts.dll out of the plugin's own output folder:
+      the host already has it loaded, and we want BOTH sides to use that one copy so the
+      IReportPlugin type identities match. See PluginLoadContext.Load in the host.
+    -->
+    <ProjectReference Include="..\PluginDiscovery.Contracts\PluginDiscovery.Contracts.csproj" Private="false" />
+  </ItemGroup>
+
+</Project>

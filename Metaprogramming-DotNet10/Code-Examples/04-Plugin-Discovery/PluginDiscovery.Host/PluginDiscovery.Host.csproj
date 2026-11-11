@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>PluginDiscovery.Host</RootNamespace>
+    <AssemblyName>PluginHost</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The host compiles against the contracts. -->
+    <ProjectReference Include="..\PluginDiscovery.Contracts\PluginDiscovery.Contracts.csproj" />
+
+    <!--
+      ReferenceOutputAssembly="false" is the important part: it makes MSBuild BUILD the plugin
+      before the host, but does NOT add a compile-time reference to it. The host therefore
+      genuinely cannot see MonthlySalesPlugin until it loads the DLL at runtime.
+    -->
+    <ProjectReference Include="..\PluginDiscovery.Plugins.Sales\PluginDiscovery.Plugins.Sales.csproj"
+                      ReferenceOutputAssembly="false"
+                      Private="false" />
+  </ItemGroup>
+
+  <!-- Drop the built plugin into a "plugins" folder next to the host executable. -->
+  <Target Name="CopyPluginAssemblies" AfterTargets="Build">
+    <ItemGroup>
+      <DiscoverablePlugin Include="$(MSBuildThisFileDirectory)..\PluginDiscovery.Plugins.Sales\bin\$(Configuration)\$(TargetFramework)\PluginDiscovery.Plugins.Sales.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(DiscoverablePlugin)"
+          DestinationFolder="$(OutDir)plugins"
+          SkipUnchangedFiles="true"
+          Condition="Exists('%(DiscoverablePlugin.FullPath)')" />
+    <Message Importance="normal" Text="Copied plugin assemblies to $(OutDir)plugins" />
+  </Target>
+
+</Project>

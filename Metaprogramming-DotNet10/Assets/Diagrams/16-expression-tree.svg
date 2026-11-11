@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1548 478" width="1548" height="478" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+<defs>
+<marker id="a-default" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#4C8DFF"/></marker>
+<marker id="a-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2CD8E8"/></marker>
+<marker id="a-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#A98BFF"/></marker>
+<marker id="a-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6F82A4"/></marker>
+<marker id="a-ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#3FD69B"/></marker>
+<marker id="a-warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FFC24B"/></marker>
+<marker id="a-bad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FF7B7B"/></marker>
+</defs>
+<rect width="1548" height="478" fill="#0E1628"/>
+<text x="24" y="17" fill="#6F82A4" font-size="13">Expression tree:  c =&gt; c.Age &gt; 18 &amp;&amp; c.Country == &quot;IN&quot;</text>
+<g transform="translate(24,32)">
+<rect x="600" y="16" width="300" height="60" rx="9" fill="#2A2250" stroke="#A98BFF" stroke-width="1.6"/>
+<text x="750.0" y="52.4" fill="#E9EEF9" font-size="17.7" text-anchor="middle" >AndAlso</text>
+<rect x="250" y="124" width="300" height="60" rx="9" fill="#1D3A6B" stroke="#2CD8E8" stroke-width="1.6"/>
+<text x="400.0" y="159.5" fill="#E9EEF9" font-size="15.3" text-anchor="middle" >GreaterThan</text>
+<rect x="950" y="124" width="300" height="60" rx="9" fill="#1D3A6B" stroke="#2CD8E8" stroke-width="1.6"/>
+<text x="1100.0" y="159.5" fill="#E9EEF9" font-size="15.3" text-anchor="middle" >Equal</text>
+<rect x="40" y="234" width="250" height="62" rx="9" fill="#1F2C4A" stroke="#4C8DFF" stroke-width="1.6"/>
+<text x="165.0" y="260.8" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >MemberAccess</text>
+<text x="165.0" y="279.4" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >c.Age</text>
+<rect x="330" y="234" width="220" height="62" rx="9" fill="#1F2C4A" stroke="#4C8DFF" stroke-width="1.6"/>
+<text x="440.0" y="260.8" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >Constant</text>
+<text x="440.0" y="279.4" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >18</text>
+<rect x="740" y="234" width="250" height="62" rx="9" fill="#1F2C4A" stroke="#4C8DFF" stroke-width="1.6"/>
+<text x="865.0" y="260.8" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >MemberAccess</text>
+<text x="865.0" y="279.4" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >c.Country</text>
+<rect x="1030" y="234" width="220" height="62" rx="9" fill="#1F2C4A" stroke="#4C8DFF" stroke-width="1.6"/>
+<text x="1140.0" y="260.8" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >Constant</text>
+<text x="1140.0" y="279.4" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >&quot;IN&quot;</text>
+<rect x="560" y="334" width="250" height="58" rx="9" fill="#18233D" stroke="#2C3A5C" stroke-width="1.6"/>
+<text x="685.0" y="368.1" fill="#9FB0CC" font-size="14.2" text-anchor="middle" >Parameter c</text>
+<rect x="1290" y="124" width="200" height="268" rx="9" fill="none" stroke="#2C3A5C" stroke-width="1.6" stroke-dasharray="5 4"/>
+<text x="1390.0" y="197.7" fill="#6F82A4" font-size="14.2" text-anchor="middle" >Both arrows</text>
+<text x="1390.0" y="216.4" fill="#6F82A4" font-size="14.2" text-anchor="middle" >reach the SAME</text>
+<text x="1390.0" y="235.1" fill="#6F82A4" font-size="14.2" text-anchor="middle" >ParameterExpression</text>
+<text x="1390.0" y="253.8" fill="#6F82A4" font-size="14.2" text-anchor="middle" >object.</text>
+<text x="1390.0" y="291.1" fill="#6F82A4" font-size="14.2" text-anchor="middle" >A graph with</text>
+<text x="1390.0" y="309.8" fill="#6F82A4" font-size="14.2" text-anchor="middle" >shared nodes,</text>
+<text x="1390.0" y="328.5" fill="#6F82A4" font-size="14.2" text-anchor="middle" >not a strict tree.</text>
+<rect x="36" y="334" width="492" height="86" rx="9" fill="#1D3A6B" stroke="#2CD8E8" stroke-width="1.6"/>
+<text x="282.0" y="372.8" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >Compile()  →  run it in memory.</text>
+<text x="282.0" y="391.4" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >Give it to EF Core  →  it becomes SQL.</text>
+<rect x="858" y="334" width="396" height="86" rx="9" fill="#13342A" stroke="#3FD69B" stroke-width="1.6"/>
+<text x="1056.0" y="372.8" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >The same object,</text>
+<text x="1056.0" y="391.4" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >two execution engines.</text>
+<line x1="600.0" y1="46.0" x2="550.0" y2="154.0" stroke="#A98BFF" stroke-width="2" marker-end="url(#a-purple)"/>
+<line x1="900.0" y1="46.0" x2="950.0" y2="154.0" stroke="#A98BFF" stroke-width="2" marker-end="url(#a-purple)"/>
+<line x1="250.0" y1="154.0" x2="290.0" y2="265.0" stroke="#2CD8E8" stroke-width="2" marker-end="url(#a-accent)"/>
+<line x1="400.0" y1="184.0" x2="440.0" y2="234.0" stroke="#2CD8E8" stroke-width="2" marker-end="url(#a-accent)"/>
+<line x1="950.0" y1="154.0" x2="990.0" y2="265.0" stroke="#2CD8E8" stroke-width="2" marker-end="url(#a-accent)"/>
+<line x1="1100.0" y1="184.0" x2="1140.0" y2="234.0" stroke="#2CD8E8" stroke-width="2" marker-end="url(#a-accent)"/>
+<line x1="290.0" y1="265.0" x2="560.0" y2="363.0" stroke="#6F82A4" stroke-width="2" marker-end="url(#a-muted)"/>
+<line x1="740.0" y1="265.0" x2="810.0" y2="363.0" stroke="#6F82A4" stroke-width="2" marker-end="url(#a-muted)"/>
+</g></svg>

@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1248 438" width="1248" height="438" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+<defs>
+<marker id="a-default" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#4C8DFF"/></marker>
+<marker id="a-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2CD8E8"/></marker>
+<marker id="a-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#A98BFF"/></marker>
+<marker id="a-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6F82A4"/></marker>
+<marker id="a-ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#3FD69B"/></marker>
+<marker id="a-warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FFC24B"/></marker>
+<marker id="a-bad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FF7B7B"/></marker>
+</defs>
+<rect width="1248" height="438" fill="#0E1628"/>
+<text x="24" y="17" fill="#6F82A4" font-size="13">Normal programming vs metaprogramming</text>
+<g transform="translate(24,32)">
+<rect x="30" y="6" width="530" height="34" rx="9" fill="none" stroke="#2C3A5C" stroke-width="1.6" stroke-dasharray="5 4"/>
+<text x="295.0" y="28.1" fill="#6F82A4" font-size="14.2" text-anchor="middle" font-weight="600" >NORMAL PROGRAMMING</text>
+<rect x="70" y="56" width="450" height="62" rx="9" fill="#0A1120" stroke="#2C3A5C" stroke-width="1.6"/>
+<text x="295.0" y="93.8" fill="#D7E2F5" font-size="18.9" text-anchor="middle" font-family="Consolas, SFMono-Regular, Menlo, monospace">customer.Email</text>
+<rect x="70" y="158" width="450" height="58" rx="9" fill="#1F2C4A" stroke="#4C8DFF" stroke-width="1.6"/>
+<text x="295.0" y="192.1" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >reads a VALUE</text>
+<rect x="70" y="256" width="450" height="76" rx="9" fill="#18233D" stroke="#2C3A5C" stroke-width="1.6"/>
+<text x="295.0" y="289.8" fill="#9FB0CC" font-size="14.2" text-anchor="middle" >Works only for Customer.</text>
+<text x="295.0" y="308.4" fill="#9FB0CC" font-size="14.2" text-anchor="middle" >YOU wrote the property name.</text>
+<rect x="640" y="6" width="530" height="34" rx="9" fill="none" stroke="#2C3A5C" stroke-width="1.6" stroke-dasharray="5 4"/>
+<text x="905.0" y="28.1" fill="#6F82A4" font-size="14.2" text-anchor="middle" font-weight="600" >METAPROGRAMMING</text>
+<rect x="680" y="56" width="450" height="62" rx="9" fill="#0A1120" stroke="#2C3A5C" stroke-width="1.6"/>
+<text x="905.0" y="92.5" fill="#D7E2F5" font-size="15.3" text-anchor="middle" font-family="Consolas, SFMono-Regular, Menlo, monospace">type.GetProperty(name).GetValue(obj)</text>
+<rect x="680" y="158" width="450" height="58" rx="9" fill="#1D3A6B" stroke="#2CD8E8" stroke-width="1.6"/>
+<text x="905.0" y="192.1" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >reads the STRUCTURE</text>
+<rect x="680" y="256" width="450" height="76" rx="9" fill="#13342A" stroke="#3FD69B" stroke-width="1.6"/>
+<text x="905.0" y="289.8" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >Works for Customer, Product, Order —</text>
+<text x="905.0" y="308.4" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >and types written next year.</text>
+<line x1="295.0" y1="118.0" x2="295.0" y2="158.0" stroke="#4C8DFF" stroke-width="2" marker-end="url(#a-default)"/>
+<line x1="295.0" y1="216.0" x2="295.0" y2="256.0" stroke="#4C8DFF" stroke-width="2" marker-end="url(#a-default)"/>
+<line x1="905.0" y1="118.0" x2="905.0" y2="158.0" stroke="#2CD8E8" stroke-width="2" marker-end="url(#a-accent)"/>
+<line x1="905.0" y1="216.0" x2="905.0" y2="256.0" stroke="#2CD8E8" stroke-width="2" marker-end="url(#a-accent)"/>
+</g></svg>

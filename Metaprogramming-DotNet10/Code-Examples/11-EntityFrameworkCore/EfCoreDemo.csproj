@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Metaprogramming.EfCoreDemo</RootNamespace>
+    <AssemblyName>EfCoreDemo</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      SQLite in-memory: no server, no file, no setup. The latest EF Core release that
+      targets net10.0 is 10.0.15 (11.x requires net11.0).
+    -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="$(MetaprogrammingEfCoreVersion)" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,98 @@
+
+==============================================================================
+1. NORMAL PROGRAMMING - code that operates on DATA
+==============================================================================
+Id       = 7
+FullName = Asha Menon
+Email    = asha@example.com
+IsActive = True
+
+The code above mentions every property by name. That is normal programming:
+the program's structure is knowledge the DEVELOPER has, not knowledge the PROGRAM has.
+
+==============================================================================
+2. THE PROBLEM - hand-written code does not scale across types
+==============================================================================
+Hand-written describers (one method per type):
+  Customer.Id = 7
+  Customer.FullName = Asha Menon
+  Customer.Email = asha@example.com
+  Customer.IsActive = True
+  Product.Sku = 101
+  Product.Name = Mechanical Keyboard
+  Product.Price = 4999.00
+
+Cost of this approach:
+  - 1 new method for every new type (N types -> N methods).
+  - Every added property means editing the describer too (easy to forget).
+  - The methods are all the same shape: read each property, format it.
+That repetition is the signal that the real task is 'walk a type's properties'.
+
+==============================================================================
+3. METAPROGRAMMING - code that operates on PROGRAM STRUCTURE
+==============================================================================
+One reflection-based describer, used for three unrelated types:
+  -- Customer (4 public properties)
+  Customer.Id = 7
+  Customer.FullName = Asha Menon
+  Customer.Email = asha@example.com
+  Customer.IsActive = True
+
+  -- Product (3 public properties)
+  Product.Sku = 101
+  Product.Name = Mechanical Keyboard
+  Product.Price = 4999.00
+
+  -- Order (3 public properties)
+  Order.OrderId = 5001
+  Order.PlacedOn = 11/10/2026
+  Order.LineCount = 2
+
+Reflective.Describe never mentions Customer, Product or Order.
+It asks the runtime 'what properties does this object's type have?' and answers from that.
+The program now reasons about its own structure => metaprogramming.
+
+==============================================================================
+4. COMPILE-TIME vs RUNTIME knowledge
+==============================================================================
+typeof(Customer).Name     = Customer          <- compiler baked this in
+nameof(Customer.FullName) = FullName          <- compiler baked this in
+Type.GetType("Metaprogramming.Basics.Customer") = Customer   <- resolved at RUNTIME
+Type.GetType("Some.Other.Assembly.Thing") = null (not found - expected)
+
+Three stages worth keeping apart:
+  compile-time generation : Roslyn source generators add real C# before the build finishes
+  runtime introspection   : Reflection reads metadata that is already in the assembly
+  runtime generation      : Reflection.Emit creates NEW IL while the process runs
+
+==============================================================================
+5. IMPLICIT vs EXPLICIT METADATA
+==============================================================================
+IMPLICIT metadata - emitted by the compiler purely because you declared the type:
+  Id        : Int32    (CanRead=True, CanWrite=True)
+  FullName  : String   (CanRead=True, CanWrite=True)
+  Email     : String   (CanRead=True, CanWrite=True)
+  IsActive  : Boolean  (CanRead=True, CanWrite=True)
+
+EXPLICIT metadata - attributes you deliberately attached:
+  FullName  : RequiredAttribute, StringLengthAttribute
+  Email     : RequiredAttribute, EmailAddressAttribute, JsonPropertyNameAttribute
+
+Both kinds live in the same assembly metadata and are read with the same Reflection API.
+The only difference is who put them there: the compiler, or you.
+
+==============================================================================
+6. WHEN METAPROGRAMMING IS THE WRONG TOOL
+==============================================================================
+Reflection replaced N hand-written methods with one. That is a real win.
+It also cost us something, and the cost is worth naming out loud:
+
+  - Compile-time safety: renaming Customer.Email breaks nothing at build time,
+    so a reflection-driven feature can fail only once it is running.
+  - Debuggability: a stack trace through Invoke tells you much less than a direct call.
+  - Speed: a reflective property read is far slower than a direct one (see 05-DynamicMethod).
+  - Trimming / Native AOT: the trimmer cannot see reflective usage, so types may be removed.
+
+Rule of thumb used throughout this session:
+  Reach for metaprogramming when the set of types is NOT known to you as you write the code
+  (plugins, serializers, mappers, DI containers). Do not reach for it just to avoid typing.

@@ -1,0 +1,21 @@
+<Project>
+
+  <!-- Settings shared by every example project in this solution. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <!-- Keep the console output of the demos clean and deterministic. -->
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <!-- Pin every Microsoft.* package to the same 10.x band so the examples are reproducible. -->
+  <PropertyGroup>
+    <MetaprogrammingEfCoreVersion>10.0.15</MetaprogrammingEfCoreVersion>
+    <MetaprogrammingExtensionsVersion>10.0.15</MetaprogrammingExtensionsVersion>
+  </PropertyGroup>
+
+</Project>

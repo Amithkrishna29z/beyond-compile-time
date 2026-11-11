@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Metaprogramming.ReflectionDemo</RootNamespace>
+    <AssemblyName>ReflectionDemo</AssemblyName>
+  </PropertyGroup>
+
+</Project>

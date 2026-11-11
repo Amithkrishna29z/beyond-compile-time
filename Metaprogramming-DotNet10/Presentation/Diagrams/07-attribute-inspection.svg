@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1548 348" width="1548" height="348" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+<defs>
+<marker id="a-default" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#4C8DFF"/></marker>
+<marker id="a-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2CD8E8"/></marker>
+<marker id="a-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#A98BFF"/></marker>
+<marker id="a-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6F82A4"/></marker>
+<marker id="a-ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#3FD69B"/></marker>
+<marker id="a-warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FFC24B"/></marker>
+<marker id="a-bad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FF7B7B"/></marker>
+</defs>
+<rect width="1548" height="348" fill="#0E1628"/>
+<text x="24" y="17" fill="#6F82A4" font-size="13">Custom attribute inspection</text>
+<g transform="translate(24,32)">
+<rect x="24" y="24" width="310" height="104" rx="9" fill="#0A1120" stroke="#2C3A5C" stroke-width="1.6"/>
+<text x="179.0" y="71.8" fill="#D7E2F5" font-size="14.2" text-anchor="middle" font-family="Consolas, SFMono-Regular, Menlo, monospace">[Table(&quot;invoice_lines&quot;)]</text>
+<text x="179.0" y="90.4" fill="#D7E2F5" font-size="14.2" text-anchor="middle" font-family="Consolas, SFMono-Regular, Menlo, monospace">class InvoiceLine</text>
+<rect x="372" y="50" width="140" height="52" rx="9" fill="none" stroke="#2C3A5C" stroke-width="1.6" stroke-dasharray="5 4"/>
+<text x="442.0" y="81.1" fill="#6F82A4" font-size="14.2" text-anchor="middle" >compiler</text>
+<rect x="550" y="16" width="320" height="120" rx="9" fill="#2A2250" stroke="#A98BFF" stroke-width="1.6"/>
+<text x="710.0" y="53.1" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >CustomAttribute row</text>
+<text x="710.0" y="71.8" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >attribute type</text>
+<text x="710.0" y="90.4" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >+ ctor arguments</text>
+<text x="710.0" y="109.1" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >(NOT an instance)</text>
+<rect x="908" y="12" width="282" height="60" rx="9" fill="#1D3A6B" stroke="#2CD8E8" stroke-width="1.6"/>
+<text x="1049.0" y="37.8" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >GetCustomAttribute&lt;T&gt;()</text>
+<text x="1049.0" y="56.4" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >RUNS the constructor</text>
+<rect x="1226" y="12" width="254" height="60" rx="9" fill="#1F2C4A" stroke="#4C8DFF" stroke-width="1.6"/>
+<text x="1353.0" y="37.8" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >a NEW instance</text>
+<text x="1353.0" y="56.4" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >every call</text>
+<rect x="908" y="92" width="282" height="60" rx="9" fill="#13342A" stroke="#3FD69B" stroke-width="1.6"/>
+<text x="1049.0" y="117.8" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >GetCustomAttributesData()</text>
+<text x="1049.0" y="136.4" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >runs NOTHING</text>
+<rect x="1226" y="92" width="254" height="60" rx="9" fill="#13342A" stroke="#3FD69B" stroke-width="1.6"/>
+<text x="1353.0" y="117.8" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >raw values —</text>
+<text x="1353.0" y="136.4" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >safe for untrusted</text>
+<rect x="24" y="192" width="1456" height="84" rx="9" fill="#1D3A6B" stroke="#2CD8E8" stroke-width="1.6"/>
+<text x="752.0" y="229.8" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >An attribute DOES NOTHING on its own — it is inert data until something reads it.</text>
+<text x="752.0" y="248.4" fill="#E9EEF9" font-size="14.2" text-anchor="middle" >Metadata stores the attribute TYPE plus its constructor ARGUMENTS, never an object.</text>
+<line x1="334.0" y1="76.0" x2="372.0" y2="76.0" stroke="#6F82A4" stroke-width="2" marker-end="url(#a-muted)"/>
+<line x1="512.0" y1="76.0" x2="550.0" y2="76.0" stroke="#4C8DFF" stroke-width="2" marker-end="url(#a-default)"/>
+<line x1="870.0" y1="76.0" x2="908.0" y2="42.0" stroke="#2CD8E8" stroke-width="2" marker-end="url(#a-accent)"/>
+<line x1="870.0" y1="76.0" x2="908.0" y2="122.0" stroke="#3FD69B" stroke-width="2" marker-end="url(#a-ok)"/>
+<line x1="1190.0" y1="42.0" x2="1226.0" y2="42.0" stroke="#2CD8E8" stroke-width="2" marker-end="url(#a-accent)"/>
+<line x1="1190.0" y1="122.0" x2="1226.0" y2="122.0" stroke="#3FD69B" stroke-width="2" marker-end="url(#a-ok)"/>
+</g></svg>

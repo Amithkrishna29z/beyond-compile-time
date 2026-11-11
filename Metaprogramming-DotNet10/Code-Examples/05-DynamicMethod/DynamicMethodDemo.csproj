@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Metaprogramming.DynamicMethodDemo</RootNamespace>
+    <AssemblyName>DynamicMethodDemo</AssemblyName>
+    <!-- Release-quality timings for the benchmark section; still runs fine in Debug. -->
+    <Optimize Condition="'$(Configuration)' == 'Release'">true</Optimize>
+  </PropertyGroup>
+
+</Project>

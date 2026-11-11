@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1248 548" width="1248" height="548" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+<defs>
+<marker id="a-default" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#4C8DFF"/></marker>
+<marker id="a-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#2CD8E8"/></marker>
+<marker id="a-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#A98BFF"/></marker>
+<marker id="a-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#6F82A4"/></marker>
+<marker id="a-ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#3FD69B"/></marker>
+<marker id="a-warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FFC24B"/></marker>
+<marker id="a-bad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FF7B7B"/></marker>
+</defs>
+<rect width="1248" height="548" fill="#0E1628"/>
+<text x="24" y="17" fill="#6F82A4" font-size="13">Runtime assembly and type generation</text>
+<g transform="translate(24,32)">
+<rect x="30" y="24" width="300" height="70" rx="9" fill="#1F2C4A" stroke="#4C8DFF" stroke-width="1.6"/>
+<text x="180.0" y="55.5" fill="#E9EEF9" font-size="11.8" text-anchor="middle" >AssemblyBuilder</text>
+<text x="180.0" y="71.0" fill="#E9EEF9" font-size="11.8" text-anchor="middle" >DefineDynamicAssembly(…, Run)</text>
+<rect x="30" y="112" width="300" height="70" rx="9" fill="#1F2C4A" stroke="#4C8DFF" stroke-width="1.6"/>
+<text x="180.0" y="143.5" fill="#E9EEF9" font-size="11.8" text-anchor="middle" >ModuleBuilder</text>
+<text x="180.0" y="159.0" fill="#E9EEF9" font-size="11.8" text-anchor="middle" >DefineDynamicModule()</text>
+<rect x="30" y="200" width="300" height="70" rx="9" fill="#1D3A6B" stroke="#2CD8E8" stroke-width="1.6"/>
+<text x="180.0" y="231.1" fill="#E9EEF9" font-size="13.0" text-anchor="middle" >TypeBuilder</text>
+<text x="180.0" y="248.2" fill="#E9EEF9" font-size="13.0" text-anchor="middle" >DefineType(…)</text>
+<rect x="30" y="288" width="300" height="70" rx="9" fill="#2A2250" stroke="#A98BFF" stroke-width="1.6"/>
+<text x="180.0" y="319.5" fill="#E9EEF9" font-size="11.8" text-anchor="middle" >AddInterfaceImplementation</text>
+<text x="180.0" y="335.0" fill="#E9EEF9" font-size="11.8" text-anchor="middle" >(typeof(IScaler))</text>
+<rect x="386" y="24" width="280" height="334" rx="9" fill="#18233D" stroke="#2C3A5C" stroke-width="1.6"/>
+<text x="526.0" y="118.6" fill="#9FB0CC" font-size="13.0" text-anchor="middle" >FieldBuilder</text>
+<text x="526.0" y="152.8" fill="#9FB0CC" font-size="13.0" text-anchor="middle" >ConstructorBuilder</text>
+<text x="526.0" y="187.1" fill="#9FB0CC" font-size="13.0" text-anchor="middle" >MethodBuilder</text>
+<text x="526.0" y="221.4" fill="#9FB0CC" font-size="13.0" text-anchor="middle" >PropertyBuilder</text>
+<text x="526.0" y="255.6" fill="#9FB0CC" font-size="13.0" text-anchor="middle" >— each with its own</text>
+<text x="526.0" y="272.8" fill="#9FB0CC" font-size="13.0" text-anchor="middle" >ILGenerator</text>
+<rect x="722" y="110" width="220" height="86" rx="9" fill="#13342A" stroke="#3FD69B" stroke-width="1.6"/>
+<text x="832.0" y="149.1" fill="#E9EEF9" font-size="13.0" text-anchor="middle" >CreateType()</text>
+<text x="832.0" y="166.2" fill="#E9EEF9" font-size="13.0" text-anchor="middle" >bakes the type</text>
+<rect x="722" y="248" width="220" height="96" rx="9" fill="#13342A" stroke="#3FD69B" stroke-width="1.6"/>
+<text x="832.0" y="283.5" fill="#E9EEF9" font-size="13.0" text-anchor="middle" >cast to IScaler,</text>
+<text x="832.0" y="300.7" fill="#E9EEF9" font-size="13.0" text-anchor="middle" >then NORMAL</text>
+<text x="832.0" y="317.8" fill="#E9EEF9" font-size="13.0" text-anchor="middle" >interface calls</text>
+<rect x="982" y="110" width="190" height="234" rx="9" fill="#1D3A6B" stroke="#2CD8E8" stroke-width="1.6"/>
+<text x="1077.0" y="197.4" fill="#E9EEF9" font-size="13.0" text-anchor="middle" >Reflection is used</text>
+<text x="1077.0" y="214.5" fill="#E9EEF9" font-size="13.0" text-anchor="middle" >ONCE, at creation.</text>
+<text x="1077.0" y="248.8" fill="#E9EEF9" font-size="13.0" text-anchor="middle" >Never on the</text>
+<text x="1077.0" y="265.9" fill="#E9EEF9" font-size="13.0" text-anchor="middle" >hot path.</text>
+<rect x="30" y="400" width="1140" height="72" rx="9" fill="#3A2A12" stroke="#FFC24B" stroke-width="1.6"/>
+<text x="600.0" y="432.1" fill="#E9EEF9" font-size="13.0" text-anchor="middle" >.NET 10: AssemblyBuilderAccess has only Run and RunAndCollect.</text>
+<text x="600.0" y="449.2" fill="#E9EEF9" font-size="13.0" text-anchor="middle" >Save and RunAndSave were .NET Framework members — to write a DLL, use PersistedAssemblyBuilder.</text>
+<line x1="180.0" y1="94.0" x2="180.0" y2="112.0" stroke="#4C8DFF" stroke-width="2" marker-end="url(#a-default)"/>
+<line x1="180.0" y1="182.0" x2="180.0" y2="200.0" stroke="#4C8DFF" stroke-width="2" marker-end="url(#a-default)"/>
+<line x1="180.0" y1="270.0" x2="180.0" y2="288.0" stroke="#4C8DFF" stroke-width="2" marker-end="url(#a-default)"/>
+<line x1="330.0" y1="235.0" x2="386.0" y2="191.0" stroke="#6F82A4" stroke-width="2" marker-end="url(#a-muted)"/>
+<line x1="330.0" y1="323.0" x2="722.0" y2="153.0" stroke="#3FD69B" stroke-width="2" marker-end="url(#a-ok)"/>
+<line x1="832.0" y1="196.0" x2="832.0" y2="248.0" stroke="#3FD69B" stroke-width="2" marker-end="url(#a-ok)"/>
+</g></svg>

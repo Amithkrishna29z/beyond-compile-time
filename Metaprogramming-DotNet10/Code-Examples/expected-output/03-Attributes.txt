@@ -1,0 +1,117 @@
+
+==============================================================================
+1. WHAT AN ATTRIBUTE IS - data attached to a declaration
+==============================================================================
+Type-level attribute on InvoiceLine:
+  [Table(Name = "invoice_lines", Schema = "sales")]
+  the returned object is an instance of TableAttribute
+
+Member-level attributes:
+  LineId       [Column("line_id", Order = 0)]
+  Description  [Column("description", Order = 1)]
+  UnitPrice    (no [Column] - convention would use the property name)
+
+Key point: the attribute instance did not exist until we asked for it.
+The assembly stores the constructor arguments; Reflection runs the constructor on demand.
+Two calls to GetCustomAttribute therefore need not return the same object:
+  ReferenceEquals(first, second) = False
+
+==============================================================================
+2. AttributeUsage - AttributeTargets, AllowMultiple, Inherited
+==============================================================================
+TableAttribute:
+  ValidOn       = Class
+  AllowMultiple = False
+  Inherited     = False
+ColumnAttribute:
+  ValidOn       = Property, Field
+  AllowMultiple = False
+  Inherited     = False
+ValidateRangeAttribute:
+  ValidOn       = Property
+  AllowMultiple = False
+  Inherited     = True
+AuditedAttribute:
+  ValidOn       = Class
+  AllowMultiple = False
+  Inherited     = True
+TagAttribute:
+  ValidOn       = Class
+  AllowMultiple = True
+  Inherited     = False
+
+Defaults when you omit [AttributeUsage]: ValidOn = All, AllowMultiple = false, Inherited = true.
+Declaring it explicitly is worth the two lines - it is compiler-enforced documentation.
+
+==============================================================================
+3. AllowMultiple IN PRACTICE
+==============================================================================
+InvoiceLine carries 3 [Tag] attributes:
+  billing
+  generated-nightly
+  pii-free
+
+With AllowMultiple = false, a second application is a COMPILE error (CS0579),
+so the constraint is enforced by the compiler, not discovered at runtime.
+
+Careful: GetCustomAttribute<T>() (singular) THROWS AmbiguousMatchException
+when more than one is present. Demonstrating that now:
+  AmbiguousMatchException - use GetCustomAttributes<T>() instead.
+
+==============================================================================
+4. Inherited IN PRACTICE
+==============================================================================
+BaseEntity declares [Audited] (Inherited=true) and [Table] (Inherited=false).
+DerivedEntity declares neither.
+
+inherit: false - look only at the type's own metadata:
+  [Audited] found = False
+  [Table]   found = False
+
+inherit: true - also walk the base chain:
+  [Audited] found = True   <- Inherited=true on the attribute, and we asked for inheritance
+  [Table]   found = False  <- Inherited=false on the attribute, so inheritance is refused
+
+Both switches must agree: the attribute must be declared Inherited=true AND
+the call must pass inherit:true. Either one off means no result.
+
+==============================================================================
+5. READING ATTRIBUTES WITHOUT INSTANTIATING THEM (CustomAttributeData)
+==============================================================================
+GetCustomAttributesData() returns the raw metadata rows:
+  NullableContextAttribute(1)
+  NullableAttribute(0)
+  TableAttribute(invoice_lines, Schema = sales)
+  TagAttribute(billing)
+  TagAttribute(generated-nightly)
+  TagAttribute(pii-free)
+
+Why this matters:
+  - No attribute constructor runs, so untrusted or broken attributes cannot execute code.
+  - The attribute's type does not have to be loadable.
+  - This is what analysis tools and MetadataLoadContext use.
+
+==============================================================================
+6. AN ATTRIBUTE-DRIVEN VALIDATION ENGINE
+==============================================================================
+VALID payment: Amount=2500 CurrencyCode="INR" Reference="PAY-001"
+  OK - no violations
+
+INVALID payment: Amount=-5 CurrencyCode="RUPEES" Reference=""
+  ERROR: Amount must be between 0.01 and 1000000 (was -5)
+  ERROR: CurrencyCode must be exactly 3 characters (was 6)
+  ERROR: Reference is required
+
+AttributeValidator has no knowledge of Payment. Annotate a new class today
+and the validator handles it without being recompiled or edited.
+
+==============================================================================
+7. WHAT TO REMEMBER
+==============================================================================
+  - An attribute is a class deriving from System.Attribute.
+  - Applying it writes a row into the assembly's CustomAttribute metadata table.
+  - GetCustomAttributes* CONSTRUCTS the attribute; GetCustomAttributesData only READS it.
+  - AllowMultiple=false is enforced by the compiler (CS0579).
+  - Inheritance needs Inherited=true on the attribute AND inherit:true at the call site.
+  - Real-world users of exactly this pattern: ASP.NET Core routing and model validation,
+    System.Text.Json naming, EF Core data annotations, xUnit test discovery.
